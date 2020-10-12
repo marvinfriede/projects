@@ -10,20 +10,21 @@ const std::string alphabet = "0123456789abdefghiklmnoprstuABDEFGHIKLMNOPRSTU";
 //const std::string alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const int alphabetSize = alphabet.length();
 
-
 // converting number to string from alphabet
-std::string stringify(unsigned long long val) { 
+std::string stringify(unsigned long long val)
+{
 	std::string ret;
-	while (val) { 
+	while (val)
+	{
 		ret += alphabet[val % alphabetSize];
 		val /= alphabetSize;
 	}
 	return ret;
 }
 
-
-int main() {
-	static const std::string pwd = "HasileiN1";
+int main()
+{
+	static const std::string pwd = "tesTpwd1";
 	static const int pwdSize = pwd.length();
 	std::string candidate = "";
 
@@ -32,19 +33,19 @@ int main() {
 	static const unsigned long long startIter = pow(alphabetSize, pwdSize - 1);
 	std::cout << "Trying to find password out of " << maxIter - startIter;
 	std::cout << " possibilities...." << std::endl;
-	
-	
 
 	// start timer
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
 	omp_set_dynamic(0);
 	omp_set_num_threads(4);
-	#pragma omp parallel for firstprivate(candidate) schedule(dynamic)
-	for (unsigned long long i = startIter; i < maxIter; i++) {
-    candidate = stringify(i);
+#pragma omp parallel for firstprivate(candidate) schedule(dynamic)
+	for (unsigned long long i = startIter; i < maxIter; i++)
+	{
+		candidate = stringify(i);
 		//std::cout << candidate << " thread: " << omp_get_thread_num() << "\n";
-    if (pwd.compare(candidate) == 0) {
+		if (pwd.compare(candidate) == 0)
+		{
 			std::cout << "\nPassword cracked! You entered: '";
 			std::cout << candidate << "'." << std::endl;
 
@@ -61,8 +62,7 @@ int main() {
 		}
 	}
 
- 
-  return 0;
+	return 0;
 }
 
 // compiled with: g++ -fopenmp -std=c++11 brute-force.cpp -o brute-force.exe -O3
