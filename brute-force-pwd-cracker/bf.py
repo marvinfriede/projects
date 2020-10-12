@@ -41,8 +41,6 @@ def main():
   exec_time = round((time.time() - start_time), 2)
   print("Time elapsed: ({:.2f}s)".format(exec_time))
 
-  return
-
 
 if __name__ == '__main__':
   main()
