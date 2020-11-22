@@ -1,5 +1,5 @@
 # pip install pytube3
-# pip install git+https://gitlab.com/obuilds/public/pytube@ob-v1 --upgrade
+# pip install git+https://gitlab.com/obuilds/public/pytube@ob-v3 --upgrade
 
 import os
 import re
@@ -11,7 +11,7 @@ def doDownload(url):
   try:
     yt = YouTube(url)
   except:
-    print(url, "is not a valid url")
+    print("{} is not a valid url".format(url))
     return
 
   path = "/home/marvin/Musik"
@@ -38,7 +38,7 @@ def doDownload(url):
 def main():
   # get urls for download from "yt-dl-urls.txt"
   scriptPath = os.path.dirname(__file__)
-  fileName = "yt-dl-urls.txt"
+  fileName = "urls.txt"
   path = os.path.join(scriptPath, fileName)
 
   # open file, read lines and close
