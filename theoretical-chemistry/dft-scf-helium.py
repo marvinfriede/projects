@@ -1,5 +1,67 @@
 # coding: utf8
 
+'''
+My implementation of DFT Assignment 5.2: Self-consistent loop for He
+ToDo: Clean up/redo argparser stuff
+
+Taught by René Wirnata in 2019/2020. 
+
+Links:
+https://tu-freiberg.de/fakultaet2/thph/lehre/density-functional-theory
+https://github.com/PandaScience/teaching-resources
+
+
+
+This is a self-consistent version of the A5.1 script with support for the
+He-atom. Instead of the real electron-electron interaction term, we use the
+classical Hartree potential and include a Hartree-Fock-like self-interaction
+correction (SIC), which amounts to half of the proper Hartree potential. This
+hack will be replaced by the LDA exchange-correlation (XC) potential in the
+next assignment. Nevertheless, the code structure already follows the general
+Kohn-Sham self-consconsistency cycle (see below).
+
+The Kohn-Sham basically contains 6 steps (see "DFT Cheat Sheet" for details):
+    0) initialize density; here we use the exact density of the H-atom,
+    1) build the effective Kohn-Sham potential; here no XC but SIC-Hartree,
+    2) solve the single-particle Schrödinger-like equation,
+    3) build the new density from single-particle solutions,
+    4) evaluate the total energy density functional E[n] for the new density,
+    5) check for self-consistency,
+    6) mix new and old density for faster convergence and increased stability.
+
+In the following example implementation, all radial integrals are expressed
+in terms of the function
+
+                             den(r) = Z * |u(r)|^2 ,                        (1)
+
+which can be used similar to
+
+                             n_tot(x) = Z * n_s(x)                          (2)
+
+in 3D integrals in case the density is radially symmetric,
+
+                   n_s(x) = n_s(r) = (4 pi r^2)^(-1) |u(r)|^2 .             (3)
+
+This makes it easier to compare code and equations from the exercise sheets.
+For example, the integral from the equation for the Hartree energy can be
+reformulated into
+
+    /                         /+inf                    /+inf
+    | d3x v(r) n_tot(r) = 4pi | dr r^2 v(r) n_tot(r) = | dr v(r) den(r) .   (4)
+    /|R^3                     /0                       /0
+
+Note, that the Hartree potential obtained by solving Poisson's equation
+corresponds to the density from Eq.(2), where Z is either 1 (H) or 2 (He).
+Consequently, we have to use q_tot = Z for the determination of the homogeneous
+solution w_hom(r) = beta * r. By contrast, u(r) still is the solution of a
+one-electron Schrödinger equation with wave function
+
+             psi(r) = Y_00 * u(r) / r   and   n_s(r) = |psi(r)|^2 ,         (5)
+
+and thus |u(r)|^2 has to be normalized to 1 regardless of the value of Z.
+'''
+
+
 import argparse
 import time
 import numpy as np

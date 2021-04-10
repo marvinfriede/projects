@@ -1,5 +1,32 @@
 # coding: utf8
 
+'''
+My implementation of DFT Assignment 5.1: Hartree energy for H-atom GS
+
+Taught by René Wirnata in 2019/2020. 
+
+Links:
+https://tu-freiberg.de/fakultaet2/thph/lehre/density-functional-theory
+https://github.com/PandaScience/teaching-resources
+
+
+
+This script uses the last assignment's code to determine a solution of the
+radial Schrödinger equation for the hydrogen ground state (n=1, l=0). After
+normalizing, the Hartree potential energy w(r) = r*vh(r) is computed in a
+second "integration" step and numerically integrated to the Hartree energy
+(~0.3125 Ha). For hydrogen, the homogeneous solution w_hom(r) = beta * r
+is not required in order to match the boundary condition (--> beta = 0).
+
+Note, that the integration limits (tmin, tmax) and step size (h) need to be
+identical for solve_rseq() and solve_poisson() or you must use interpolated
+versions of the functions w(r) and u(r) when computing the Hartree energy.
+Further, tmin for solve_poisson() should not be smaller than tmin for
+solve_rseq(), because extrapolating u(r) beyond the computed data points may
+result in errors.
+'''
+
+
 import time
 import numpy as np
 import matplotlib.pyplot as plt

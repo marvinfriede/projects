@@ -1,8 +1,9 @@
 from PIL.ExifTags import TAGS, GPSTAGS
 from PIL import Image
+from glob import glob
 
 
-image = 'C:\\Users\\Marv\\Desktop\\img-metadata\\Amaze group - 09.09.2018 - Tomb 1.jpg'
+
 
 
 def get_exif(filename):
@@ -60,9 +61,14 @@ def get_coordinates(geotags):
 
 
 def main():
-	exif = get_exif(image)
-	geotags = get_geotagging(exif)
-	print(get_coordinates(geotags)))
+	try:
+		image = glob("*.jpg")[0]
+			exif = get_exif(image)
+		geotags = get_geotagging(exif)
+		print(get_coordinates(geotags))
+	except Exception as e:
+		raise e
+
 
 
 if __name__ == "__main__":
