@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="keywords" content="marvinfriede, marvin friede, programming projects"/>
+		<meta name="description" content="Personal website for displaying programming projects"/>
+		<title>marvinfriede - projects</title>
+	</head>
+
+	<header>
+		<nav class="nav-top">
+			<div class="nav-link__box">
+				<a class="nav-link" href="index.html">Home</a>
+			</div>
+
+			<div class="nav-link__box">
+				<a class="nav-link" href="projects.html">Projects</a>
+			</div>
+
+			<div class="nav-link__box">
+				<a class="nav-link" href="about.html">About</a>
+			</div>
+		</nav>
+	</header>
+
+	<body data-page-name="projects">
+		<div class="hor-box">
+			<div class="sort-container">
+				<div class="dropdown-pre">Sortierung:</div>
+				<div class="dropdown-wrap">
+					<div class="dropdown">
+						<div class="dropdown-current-element sort-sorter">Sprache</div>
+						<div class="dropdown-content">
+							<div class="dropdown-content__option" data-label="lang">
+								Sprache
+							</div>
+							<div class="dropdown-content__option" data-label="abc">
+								Alphabetisch
+							</div>
+						</div>
+					</div>
+					<div class="dropdown-caret"></div>
+				</div>
+			</div>
+
+			<div class="sort-container">
+				<div class="dropdown-pre">Anzeige:</div>
+				<div class="dropdown-wrap">
+					<div class="dropdown">
+						<div class="dropdown-current-element sort-select" data-label="all">
+							Alle
+						</div>
+						<div class="dropdown-content">
+							<div class="dropdown-content__option" data-label="all">Alle</div>
+							<div class="dropdown-content__option" data-label="c">C</div>
+							<div class="dropdown-content__option" data-label="py">Python</div>
+							<div class="dropdown-content__option" data-label="js">
+								JavaScript
+							</div>
+						</div>
+					</div>
+					<div class="dropdown-caret"></div>
+				</div>
+			</div>
+
+			<div class="sort-btn">Anwenden</div>
+		</div>
+
+		<div class="project-grid">
+			<div
+				class="project-container"
+				data-label="Daten-Einax-Alter"
+				data-lang="py"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Daten-Einax-Alter</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Daten-Einax-Alter
+				</div>
+			</div>
+
+
+			<div
+				class="project-container"
+				data-label="ApproximationPiTrapezoidal"
+				data-lang="c"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Approximation von &pi; (Trapezregel)</div>
+					<div class="project-header__icon lang-c"></div>
+				</div>
+				<div class="project-preview">
+					OpenMP-parallelisiertes Programm zur Approximation von &pi; durch numerische Intergration einer Funktion mittels Trapezregel.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="DijkstraAlgorithmSequential"
+				data-lang="c"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Dijkstra's Algorithmus (sequentiell)</div>
+					<div class="project-header__icon lang-c"></div>
+				</div>
+				<div class="project-preview">
+					Eine einfache Implementierung des Dijkstra-Algorithmus. Dieser findet den kürzesten Pfad innerhalb eines zufällig gewichteten Graphen.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="DijkstraAlgorithmParallel"
+				data-lang="c"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Dijkstra's Algorithmus (parallel)</div>
+					<div class="project-header__icon lang-c"></div>
+				</div>
+				<div class="project-preview">
+					Eine MPI-Implementierung des Dijkstra-Algorithmus. Dieser findet den kürzesten Pfad innerhalb eines zufällig gewichteten Graphen.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="MandelbrotSetSequential"
+				data-lang="c"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Mandelbrot Set (sequentiell)</div>
+					<div class="project-header__icon lang-c"></div>
+				</div>
+				<div class="project-preview">
+					Einfache, optimierte C-Implementierung des Mandelbrot Sets für Darstellung im Terminal.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="OmpPrivateDemo"
+				data-lang="c"
+			>
+				<div class="project-header">
+					<div class="project-header__label">OpenMP's&nbsp;<i>private</i>&nbsp;(Demonstration)</div>
+					<div class="project-header__icon lang-c"></div>
+				</div>
+				<div class="project-preview">
+					Einfaches Beispiel zur Darstellung der OpenMP-Klauseln <i>private</i>, <i>firstprivate</i> und <i>lastprivate</i>.
+				</div>
+			</div>
+
+
+			<div
+				class="project-container"
+				data-label="DftHelium"
+				data-lang="py"
+			>
+				<div class="project-header">
+					<div class="project-header__label">DFT-Programm für Helium</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Rudimentäres DFT-Programm, welches über iteratives Lösen der radialen Schrödinger-Gleichung die Grundzustandsenergie von Wasserstoff und Helium bestimmt. (noch ohne&nbsp;<i>xc</i>-Potential)
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="LinearRegression"
+				data-lang="py"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Lineare Regression</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Lineare Regression einiger Beispieldatensätze mit verschiedenen Methoden. Polynomiale Regression des Filip-Datensatzes mit und ohne Feature-Scaling.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="LogisticRegression"
+				data-lang="py"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Logistische Regression</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Logistische Regression von zwei Beispieldatensätzen mit linearer und nichtlinearer (Regularisierung) Entscheidungsgrenze.
+				</div>
+			</div>
+
+			<div class="project-container" data-label="KineticModel" data-lang="py">
+				<div class="project-header">
+					<div class="project-header__label">Kinetisches Modell</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Aufgestelltes kinetisches Modell im Rahmen des Moduls "Kinetik und
+					Katalyse". Das Modell ermöglicht die Berechnung von
+					Konzentrations-Zeit-Kurven für variable Temperaturen und
+					Ausgangskonzentrationen.
+				</div>
+			</div>
+
+			<div class="project-container" data-label="MatrixExercise" data-lang="py">
+				<div class="project-header">
+					<div class="project-header__label">Matrixfunktionen</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Nutzung von <i>numpy</i> zur Erstellung von speziellen Matrizen und
+					Anwendung von Matrizenzerlegungsverfahren.
+				</div>
+			</div>
+
+			<div
+				class="project-container"
+				data-label="MonteCarloSimulation"
+				data-lang="py"
+			>
+				<div class="project-header">
+					<div class="project-header__label">Monte-Carlo-Simulation</div>
+					<div class="project-header__icon lang-py"></div>
+				</div>
+				<div class="project-preview">
+					Auswertung einer Monte-Carlo-Simulation eines Modellamphiphils im
+					Rahmen des Moduls "Grenzflächen und Kolloide".
+				</div>
+			</div>
+
+			
+			<div class="project-container" data-label="JavaScriptShortcuts" data-lang="js">
+				<div class="project-header">
+					<div class="project-header__label">JavaScript Utility</div>
+					<div class="project-header__icon lang-js"></div>
+				</div>
+				<div class="project-preview">
+					Collection of JavaScript utility functions which improve readability or may be of use in general.
+				</div>
+			</div>
+		</div>
+
+	</body>
+</html>

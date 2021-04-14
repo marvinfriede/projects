@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<meta charset="UTF-8">
+<html>
+<head>
+<title>/media/marvin/USB-STICK/7. Semester/Introduction to HPC and Optimization/ex5/mfriede_ex5_pi.c</title>
+<style>
+.highlight .hll { background-color: #ffffcc }
+.highlight .c { color: #408080; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #BC7A00 } /* Comment.Preproc */
+.highlight .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #408080; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #FF0000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #00A000 } /* Generic.Inserted */
+.highlight .go { color: #888888 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #7D9029 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #A0A000 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #BB6688 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
+.highlight * { font-family: monospace; }
+.highlight { font-size: 1rem; }
+.highlight { line-height: normal; }
+.highlight .err { border: none !important }
+html {overflow-y: hidden;} body {padding: 8px; background-color: #fff; position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px; margin: auto; width: 80%;} .highlight {padding: 5px 15px; background-color: #fff; min-height: 0; -webkit-box-shadow: 0px 0px 12px 1px rgba(87, 87, 87, 0.2); box-shadow: 0px 0px 12px 1px rgba(87, 87, 87, 0.2);} .highlight * {white-space: break-spaces;}
+</style>
+</head>
+<body>
+		<div class="code-container">
+<div class="highlight"><pre><span></span><span class="lineno"> 1 </span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="lineno"> 2 </span><span class="cp">#include</span> <span class="cpf">&lt;omp.h&gt;</span><span class="cp"></span>
+<span class="lineno"> 3 </span><span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp"></span>
+<span class="lineno"> 4 </span>
+<span class="lineno"> 5 </span>
+<span class="lineno"> 6 </span><span class="c1">// function for approximating pi </span>
+<span class="lineno"> 7 </span><span class="kt">double</span> <span class="nf">function</span><span class="p">(</span><span class="kt">double</span> <span class="o">*</span><span class="n">x</span><span class="p">){</span>
+<span class="lineno"> 8 </span>    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="o">*</span><span class="n">x</span> <span class="o">*</span> <span class="o">*</span><span class="n">x</span><span class="p">);</span>
+<span class="lineno"> 9 </span><span class="p">}</span>
+<span class="lineno">10 </span>
+<span class="lineno">11 </span>
+<span class="lineno">12 </span><span class="c1">// numerical integration with trapezoidal rule</span>
+<span class="lineno">13 </span><span class="kt">double</span> <span class="nf">trapezoidal</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">short</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">short</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="o">*</span><span class="n">n</span><span class="p">){</span>
+<span class="lineno">14 </span>    <span class="kt">double</span> <span class="n">h</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="lineno">15 </span>    <span class="n">h</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="n">b</span> <span class="o">-</span> <span class="o">*</span><span class="n">a</span><span class="p">)</span> <span class="o">/</span> <span class="o">*</span><span class="n">n</span><span class="p">;</span> <span class="c1">// prefactor</span>
+<span class="lineno">16 </span>
+<span class="lineno">17 </span>    <span class="cp">#pragma omp parallel for firstprivate(a, b) reduction(+:sum)</span>
+<span class="lineno">18 </span>    <span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="o">*</span><span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+<span class="lineno">19 </span>        <span class="n">x</span> <span class="o">=</span> <span class="o">*</span><span class="n">a</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">h</span><span class="p">;</span>
+<span class="lineno">20 </span>        <span class="n">sum</span> <span class="o">+=</span> <span class="n">function</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">);</span> <span class="c1">// summation part of trapezoidal rule</span>
+<span class="lineno">21 </span>    <span class="p">}</span>
+<span class="lineno">22 </span>    
+<span class="lineno">23 </span>    <span class="k">return</span> <span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="n">sum</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">function</span><span class="p">(</span> <span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="p">)</span><span class="n">a</span> <span class="p">)</span> <span class="o">+</span> <span class="n">function</span><span class="p">(</span> <span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="p">)</span><span class="n">b</span> <span class="p">)));</span> 
+<span class="lineno">24 </span><span class="p">}</span>
+<span class="lineno">25 </span>
+<span class="lineno">26 </span>
+<span class="lineno">27 </span><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+<span class="lineno">28 </span>    <span class="n">omp_set_dynamic</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="c1">// explicitly disable dynamic teams</span>
+<span class="lineno">29 </span>    <span class="n">omp_set_num_threads</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span> <span class="c1">// n threads for all parallel regions</span>
+<span class="lineno">30 </span>    <span class="c1">// printf(&quot;%d\n&quot;, omp_get_num_threads()); // only works in parallel region</span>
+<span class="lineno">31 </span>
+<span class="lineno">32 </span>    <span class="kt">double</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="p">;</span>
+<span class="lineno">33 </span>    <span class="n">start_time</span> <span class="o">=</span> <span class="n">omp_get_wtime</span><span class="p">();</span>
+<span class="lineno">34 </span>
+<span class="lineno">35 </span>    <span class="kt">double</span> <span class="n">integral</span><span class="p">,</span> <span class="n">pi_approx</span><span class="p">;</span>
+<span class="lineno">36 </span>    <span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">// lower and upper bound of integral</span>
+<span class="lineno">37 </span>    <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">100000000</span><span class="p">;</span> <span class="c1">// stepsize, increase n for higher accuracy</span>
+<span class="lineno">38 </span>    
+<span class="lineno">39 </span>    <span class="n">pi_approx</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">trapezoidal</span><span class="p">(</span><span class="o">&amp;</span><span class="n">a</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">b</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">);</span> <span class="c1">// four times the integral</span>
+<span class="lineno">40 </span>    <span class="n">end_time</span> <span class="o">=</span> <span class="n">omp_get_wtime</span><span class="p">();</span>
+<span class="lineno">41 </span>    
+<span class="lineno">42 </span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Correct value of pi:</span><span class="se">\t\t</span><span class="s">3.1415926536</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="lineno">43 </span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Appoximated value of pi:</span><span class="se">\t</span><span class="s">%.10lf</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">pi_approx</span><span class="p">);</span>
+<span class="lineno">44 </span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Total execution time: %.2lfs</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">);</span>
+<span class="lineno">45 </span>    
+<span class="lineno">46 </span>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="lineno">47 </span><span class="p">}</span>
+<span class="lineno">48 </span>
+<span class="lineno">49 </span>
+<span class="lineno">50 </span><span class="cm">/*</span>
+<span class="lineno">51 </span><span class="cm">Example-Output:</span>
+<span class="lineno">52 </span>
+<span class="lineno">53 </span><span class="cm">Correct value of pi: 3.1415926536</span>
+<span class="lineno">54 </span><span class="cm">Appoximated value of pi: 3.1415926596</span>
+<span class="lineno">55 </span>
+<span class="lineno">56 </span><span class="cm">Total execution time: 0.89</span>
+<span class="lineno">57 </span>
+<span class="lineno">58 </span>
+<span class="lineno">59 </span><span class="cm">Note: </span>
+<span class="lineno">60 </span><span class="cm"> - using 1 thread, the results are consistent</span>
+<span class="lineno">61 </span><span class="cm"> - however, with more threads the results vary every time</span>
+<span class="lineno">62 </span><span class="cm"> - fix: compiling with -O2 or -O3 (-O1 does not work)</span>
+<span class="lineno">63 </span>
+<span class="lineno">64 </span>
+<span class="lineno">65 </span><span class="cm">// function is inlined, but avoiding calls does not enhance performance</span>
+<span class="lineno">66 </span><span class="cm">double trapezoidal(unsigned short *a, unsigned short *b, unsigned long *n){</span>
+<span class="lineno">67 </span><span class="cm">    double h, x, sum = 0;</span>
+<span class="lineno">68 </span><span class="cm">    h = (double) (*b - *a) / *n; // prefactor</span>
+<span class="lineno">69 </span>
+<span class="lineno">70 </span><span class="cm">    #pragma omp parallel for firstprivate(a, b) reduction(+:sum)</span>
+<span class="lineno">71 </span><span class="cm">    for (unsigned long i = 0; i &lt;= *n; i++){</span>
+<span class="lineno">72 </span><span class="cm">        x = *a + i*h;</span>
+<span class="lineno">73 </span><span class="cm">        sum += 1.0 / (1 + x*x); // summation part of trapezoidal rule</span>
+<span class="lineno">74 </span><span class="cm">    }</span>
+<span class="lineno">75 </span><span class="cm">    </span>
+<span class="lineno">76 </span><span class="cm">    return h*(sum + 0.5*(1.0 / (1 + *a * *a) + 1.0 / (1 + *b * *b) )); </span>
+<span class="lineno">77 </span><span class="cm">}</span>
+<span class="lineno">78 </span><span class="cm">*/</span>
+</pre></div>
+</div>
+
+</body>
+</html>
