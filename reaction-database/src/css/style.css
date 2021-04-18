@@ -1,0 +1,46 @@
+:root {
+	--white: #fff;
+	--gray1: #f3f3f3;
+	--gray2: #dee0e2;
+	--gray3: #cccccc;
+	--gray4: #c4c4c4;
+	--gray5: #6c757d;
+	--gray6: #343a40;
+	--gray7: #303030;
+	--success: #28a745;
+	--success-bg: #e2f8e7;
+	--success-bg2: #66bd7c;
+	--info: #17a2b8;
+	--warning: #ffc107;
+	--danger: #dc3545;
+	--danger-bg: #f2dede;
+	--danger-border: #ebccd1;
+	--dark: #343a40;
+	--black: #1e1e1e;
+}
+
+body {
+	background-color: #fafafa;
+}
+
+.hidden {
+	display: none !important;
+}
+.visible {
+	display: block !important;
+}
+
+div.grid-container {
+	width: 100%;
+	height: 90vh;
+}
+#grid {
+	padding: 10px;
+	height: 100%;
+}
+.ag-cell {
+	line-height: 1.5 !important;
+}
+.ag-cell-wrap-text {
+	word-break: break-word !important;
+}

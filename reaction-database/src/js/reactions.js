@@ -1,0 +1,232 @@
+export const data = {
+	organic: [
+		{
+			name: "Dess-Martin Oxidation, Dess-Martin Reaction",
+			category: "oxidation",
+			educt: "alcohol (primary or secondary)",
+			reagents: "Dess-Martin periodinane, DMP",
+			product: "aldehyde or ketone",
+			tfg: "epoxides, enolethers, furane, sulfides",
+			advantages: "DMP only reagent, DMP is powder, mild oxidative conditions",
+			disadvantages: "can leave traces of acetic acid behind, preparation of DMP",
+		},
+		{
+			name: "Swern Oxidation, Swern Reaction",
+			category: "oxidation",
+			educt: "alcohol (primary or secondary)",
+			reagents: "DMSO, oxalyl chloride, triethylamine",
+			product: "aldehyde or ketone",
+			conditions: "low temperature (-40°C), no water",
+			advantages: "mild oxidateive conditions, no toxic compounds, metal free",
+			disadvantages: "three reagents needed, dry compounds needed",
+		},
+		{
+			name: "Ley-Griffith Oxidation, Ley-Griffith Reaction, Ley Oxidation",
+			category: "oxidation",
+			educt: "alcohol (primary or secondary)",
+			reagents:
+				"TPAP (Tetrapropylammonium perruthenate), NMO (N-methylmorpholine N-oxide) as reoxidizer",
+			product: "aldehyde or ketone",
+			tfg: "silylethers, ketals, epoxides",
+			advantages:
+				"very mild oxidative conditions, no toxic compounds, only catalytic amounts of oxidant",
+			disadvantages: "TPAP expensive",
+		},
+		{
+			name:
+				"Chromium Mediated Reactions, PCC Oxidation, PDC-Oxidation, Corey-Suggs Oxidation",
+			category: "oxidation",
+			educt: "alcohol (primary or secondary)",
+			reagents: "PCC (pyridinium chlorochromate), PDC (pyridinium dichromate)",
+			product: "aldehyde or ketone",
+			conditions: "RT, methylene chloride",
+			advantages: "stable reagent",
+			disadvantages: "toxic chromium compounds",
+		},
+		{
+			name: "Epp-Widlanski Oxidation",
+			category: "oxidation",
+			educt: "alcohol (primary or secondary)",
+			reagents:
+				"TEMPO (2,2,6,6-tetramethylpiperidin-1-oxyl), BAIB (bis(acetoxy)iodobenzene) as reoxidizer",
+			product: "aldehyde or ketone",
+			advantages: "high yields, selectivity towards primary alcohols possible",
+		},
+		{
+			name: "Allylic Oxidation, Benzylic Oxidation",
+			category: "oxidation",
+			educt: "alcohol (allylic or benzylic)",
+			reagents: "manganese(IV) dioxide",
+			product: "aldehyde or ketone",
+			tfg: "primary and secondary alcohols",
+			advantages: "selective towards other alcohols",
+		},
+		{
+			name: "Pinnick Oxidation, Pinnick-Lindgren Oxidation",
+			category: "oxidation",
+			educt: "aldehyde",
+			reagents:
+				"sodium chlorite (oxidant), 2-methylbutene (scavenger for hypochloric acid byproduct), potassium dihydrogenphosphate (acid) ",
+			product: "carboxylic acid",
+			conditions: "water/acetonitrile",
+			tfg: "hydroxides, epoxides, benzyl ethers, halides including iodides, stannanes",
+		},
+		{
+			name: "Enolate Oxidation",
+			category: "oxidation",
+			educt: "enolate",
+			reagents:
+				"osmium tetroxide (catalyst), NMO (N-methylmorpholine N-oxide) as reoxidizer",
+			product: "alpha-hydroxycarbonyl (acyloine)",
+			tfg: "silylethers, sulfonyls",
+			advantages: "syn-specific, only catalytic amounts of osmium tetroxide ",
+			disadvantages: "osmium tetroxide is very toxic",
+		},
+		{
+			name: "Enolate Oxidation",
+			category: "oxidation",
+			educt: "enolate",
+			reagents: "base, molecular oxygen, triethoxyphosphane",
+			product: "alpha-hydroxycarbonyl (acyloine)",
+			conditions: "THF",
+		},
+		{
+			name: "Davies Oxidation, Enolate Oxidation",
+			category: "oxidation",
+			educt: "enolate (ketone, ester)",
+			reagents:
+				"Davies reagent (2-(phenylsulfonyl)-3-phenyloxaziridine), base (e.g. KHDMS)",
+			product: "alpha-hydroxycarbonyl (acyloine)",
+			conditions: "THF, -78°C, less than 1h",
+		},
+		{
+			name: "Baeyer-Villiger Oxidation",
+			category: "oxidation, oxidative cleavage",
+			educt: "ketone, cyclic ketone, aldehyde",
+			reagents: "peroxyacids (peracids)",
+			product: "ester, lactone, carboxylic acid",
+			conditions: "RT or lower",
+			advantages: "retention at migrating center",
+			disadvantages: "for aldehydes there are easier and more atom economic reactions",
+		},
+		{
+			name:
+				"Malaprade Oxidation, Malaprade Reaction, Periodate Cleavage, Glycol Cleavage",
+			category: "oxidative cleavage",
+			educt: "1,2-diol (glycol)",
+			reagents: "sodium periodate, sodium hydrogencarbonate",
+			product: "aldehyde or ketone",
+			conditions: "water",
+			advantages: "alternative to ozonolysis",
+		},
+		{
+			name: "Criegee Oxidation, Criegee Reaction, Periodate Cleavage, Glycol Cleavage",
+			category: "oxidative cleavage",
+			educt: "1,2-diol (glycol)",
+			reagents: "lead(IV) acetate",
+			product: "aldehyde or ketone",
+			advantages: "alternative to ozonolysis",
+		},
+		{
+			name: "Oxidative Cleavage Of Double Bonds/Aromatics",
+			category: "oxidative cleavage",
+			educt: "double bond, aromatic",
+			reagents: "osmium tetroxide/ruthenium tetroxide, sodium periodate",
+			product: "aldehyde or ketone, carboxylic acid",
+			conditions: "water, MeOH",
+			tfg: "silylethers, four-membered rings",
+			advantages: "also works with electron-rich heterocycles",
+			disadvantages: "toxic reagents",
+		},
+		{
+			name: "Brown Hydroboration",
+			category: "addition",
+			educt: "double bond, olefin",
+			reagents: "borane",
+			product: "organoborane",
+			conditions: "RT or lower, THF",
+			advantages:
+				"highly stereo- (syn) and regio-selective (anti-Markovnikoff-product), starting materials for Suzuki couplings",
+		},
+		{
+			name: "Brown Hydroboration And Subsequent Oxidation",
+			category: "oxidation",
+			educt: "organoborane",
+			reagents: "sodium hydroxide, hydrogen peroxide",
+			product: "alcohol",
+			conditions: "water",
+			advantages: "stereocontrol with sterically demanding boranes like 9-BBN",
+		},
+		{
+			name: "Prilezhaev Reaction",
+			category: "epoxidation",
+			educt: "double bond, olefin",
+			reagents: "peroxyacids (peracids) like mCPBA (meta-chloroperoxybenzoic adic)",
+			product: "epoxide",
+			advantages: "stereospecific syn-addition (E → trans and Z → cis)",
+		},
+		{
+			name:
+				"Jacobsen-Katsuki Epoxidation, Jacobsen-Katsuki Reaction, Jacobsen Epoxidation",
+			category: "enantionselective epoxidation",
+			educt: "cis double bond, cis-olefin",
+			reagents:
+				"sodium hypochlorite (oxidant), manganese salene complex (catalyst), 4-PPNO (4-phenylpyridine-N-oxide) as additive",
+			product: "epoxide",
+			conditions: "methylene chloride",
+			tfg: "ester",
+			advantages:
+				"allows more educts than Sharpless epoxidation (aryl, alkyl, alkenyl, alkynyl)",
+		},
+		{
+			name:
+				"Sharpless Epoxidation, Sharpless-Katsuki Epoxidation, Sharpless-Katsuki Reaction",
+			category: "enantionselective epoxidation",
+			educt: "prochiral allylic alcohol",
+			reagents:
+				"titanium(IV) tetraisopropylate (catalyst), tert-butylhydroperoxide (oxidant), D-(-)-diethyltartrate (chiral auxilliary)",
+			product: "epoxide",
+			conditions: "methylene chloride",
+			advantages:
+				"readily available chiral component, high chemo- and enantioselectivity",
+		},
+		{
+			name: "Upjohn Dihydroxylation",
+			category: "oxidation",
+			educt: "double bond, olefin",
+			reagents:
+				"osmium tetroxide (catalyst), NMO (N-methylmorpholine N-oxide) as reoxidizer",
+			product: "1,2-diol",
+			conditions: "RT, acetone/water mixture",
+			advantages: "syn-selective",
+			disadvantages: "osmium tetroxide is very toxic",
+		},
+		{
+			name: "Sharpless  Dihydroxylation, Sharpless Antisymmetric Dihydroxylation, SAD, ",
+			category: "oxidation",
+			educt: "double bond, prochiral olefin",
+			reagents:
+				"osmium tetroxide equivalent (catalyst), NMO (N-methylmorpholine N-oxide) or potassium ferricyanide as oxidant, chiral dihydroquinone like (DHQ)2-PHAL ",
+			product: "1,2-diol",
+			conditions: "RT or lower, tert-butanol/water mixture",
+			advantages: "complex ligand cheap, very high enantionselectivity",
+			disadvantages: "less efficient for cis-olefins",
+		},
+		{
+			name: "Tamao-Flemming Oxidation",
+			category: "oxidation",
+		},
+		{
+			name: "Riley Oxidation, Selenium Dioxide Oxidation",
+			category: "oxidation",
+			educt:
+				"activated methylene (allylic or alpha to carbonyl methyl/methylene/methine or 1,4-diketone)",
+			reagents: "selenium(IV) dioxide",
+			product: "allylic alcohol, 1,2-dicarbonyl, unsaturated 1,4-diketone",
+			conditions: "dioxane, acetic acid, water",
+			advantages:
+				"highly specific for carbonyls and olefins, mild oxidative conditions, also aldehydes in gas phase reaction possible",
+			disadvantages: "selenium(IV) dioxide is very toxic",
+		},
+	],
+};
