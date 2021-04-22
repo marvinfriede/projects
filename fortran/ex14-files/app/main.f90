@@ -12,7 +12,7 @@ contains
 end module
 
 program main
-  use strings
+  use strings, only: str2int
   use iso_fortran_env, only: input_unit, error_unit
   implicit none
 

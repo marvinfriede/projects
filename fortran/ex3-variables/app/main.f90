@@ -10,4 +10,3 @@ write(*, *) "Number is ", number
 
 
 end program numbers
- 
