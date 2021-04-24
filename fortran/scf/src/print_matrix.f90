@@ -22,7 +22,8 @@ subroutine write_vector(vector, name, unit)
     character(len=*),intent(in),optional :: name
     integer, intent(in),optional :: unit
     integer :: d
-    integer :: i, j, k, l, istep, iunit
+    integer :: j, iunit
+		! integer :: i, j, k, l, istep
 
     d = size(vector, dim=1)
 
@@ -64,7 +65,7 @@ subroutine write_2d_matrix(matrix, name, unit, step)
     if (present(step)) then
         istep = step
     else
-        istep = 5
+        istep = 6
     end if
 
     if (present(name)) write(iunit,'(/,"matrix printed:",1x,a)') name

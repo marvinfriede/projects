@@ -51,7 +51,9 @@ program main_prog
   end if
 
   !> This is the entry point for the student program
-  call scf_prog(io_unit)
+  write (*, 100) input_file
+100 format("Running HF calculation on '", A, "'.")
+  call scf_prog(io_unit, 0)
 
   !> If we have opened a file, we have to cleanup now, so we close it again
   if (io_unit /= input_unit) then

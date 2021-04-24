@@ -3,10 +3,13 @@
 # stop on errors
 set -eu
 
+# Ensure non-localized printout
+export LC_NUMERIC=en_US.UTF-8
+
 # put the name of your program here
-program=echo
+program="build/gfortran_2A42023B310FA28D/app/scf"
 # unique pattern to find the final energy
-pattern='final SCF energy'
+pattern='Hartree-Fock energy:  '
 # output file for plotting
 datafile=plot.dat
 
