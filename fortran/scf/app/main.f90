@@ -158,6 +158,17 @@ contains
     end if
 
     !*********************************************************
+    !********************** ALLOCATION ***********************
+    !*********************************************************
+
+    allocate (X(nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (two_ints(nbf, nbf, nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (P(nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+
+    !*********************************************************
     !*************** NUCLEAR REPULSION ENERGY ****************
     !*********************************************************
 
@@ -183,7 +194,7 @@ contains
     !******************* OCCUPATION MATRIX *******************
     !*********************************************************
 
-    ! build (diagonal) occupation matrix
+    !> build (diagonal) occupation matrix
     write (*, "(A21,14X)", advance="no") "Occupation matrix ..."
     call set_n_occ(nbf, nel, n_occ)
     write (*, "(A)") "done"
@@ -208,25 +219,16 @@ contains
     !*********************************************************
 
     write (*, "(A26,9X)", advance="no") "Two-electron integrals ..."
-
-    allocate (two_ints(nbf, nbf, nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-
     call get_twoint(nbf, xyz, expnts, coeffs, bf_atom_map, two_ints)
-
     write (*, "(A)") "done"
 
     !*********************************************************
     !************** SYMMETRIC ORTHONORMALIZER ****************
     !*********************************************************
 
+    !> last argument optional, pass to check if X^T * S * X = 1
     write (*, "(A29,6X)", advance="no") "Symmetric orthonormalizer ..."
-
-    allocate (X(nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    ! last argument optional, pass to check if X^T * S * X = 1
     call sym_orthonormalizer(S_packed, nbf, X, S)
-
     write (*, "(A)") "done"
 
     !*********************************************************
@@ -252,13 +254,11 @@ contains
     !******************** INITIAL GUESS **********************
     !*********************************************************
 
-    allocate (P(nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-
     write (*, 101)
     write (*, "(A)") "Initial Guess"
     write (*, 102)
-    ! get initial density matrix
+
+    !> get initial density matrix
     call iter_step(nbf, T, V, two_ints, X, n_occ, P, escf, print_level, &
                    is_initial=.true.)
 
@@ -269,8 +269,6 @@ contains
     write (*, 101)
     write (*, "(A)") "SCF Iterations"
     write (*, 102)
-    write (*, "(A)") "Convergence criterion is Energy"
-    write (*, "(A)")
 
     !> scf loop
     call scf_loop(nbf, T, V, two_ints, X, n_occ, P, escf, &
@@ -299,7 +297,9 @@ contains
 
     call check_normalization(S, P, nel)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !*********************************************************
+    !********************* DEALLOCATION **********************
+    !*********************************************************
     deallocate (zeta)
     deallocate (chrg)
     deallocate (xyz)
