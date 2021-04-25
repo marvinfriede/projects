@@ -9,13 +9,13 @@ export LC_NUMERIC=en_US.UTF-8
 # put the name of your program here
 program="build/gfortran_2A42023B310FA28D/app/scf"
 # unique pattern to find the final energy
-pattern='Hartree-Fock energy:  '
+pattern='Hartree-Fock energy ...         '
 # output file for plotting
 datafile=plot.dat
 
 # scan distances
-start_distance=1.4
-last_distance=5.0
+start_distance=0.6
+last_distance=6.0
 step=0.1
 
 read -r -d 'END' input <<EOF

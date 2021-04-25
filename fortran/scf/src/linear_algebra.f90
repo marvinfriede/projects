@@ -1,36 +1,33 @@
 module linear_algebra
 
-    !> Always declare everything explicitly
-    implicit none
+  !> Always declare everything explicitly
+  implicit none
 
-    !> Export solve_spev
-    private
-    public :: solve_spev
+  !> Export solve_spev
+  private
+  public :: solve_spev
 
-    integer, parameter :: wp = selected_real_kind(15)
+  integer, parameter :: wp = selected_real_kind(15)
 
-
-    !> interfaces to lapack
-    interface
-        subroutine dspev(jobz, uplo, n, ap, w, z, ldz, work, info)
-            import wp
-            integer, intent(in) :: ldz
-            real(wp), intent(inout) :: ap(*)
-            real(wp), intent(out) :: w(*)
-            real(wp), intent(out) :: z(ldz,*)
-            character, intent(in) :: jobz
-            character, intent(in) :: uplo
-            integer, intent(out) :: info
-            integer, intent(in) :: n
-            real(wp), intent(inout) :: work(*)
-        end subroutine dspev
-    end interface
-
+  !> interfaces to lapack
+  interface
+    subroutine dspev(jobz, uplo, n, ap, w, z, ldz, work, info)
+      import wp
+      integer, intent(in) :: ldz
+      real(wp), intent(inout) :: ap(*)
+      real(wp), intent(out) :: w(*)
+      real(wp), intent(out) :: z(ldz, *)
+      character, intent(in) :: jobz
+      character, intent(in) :: uplo
+      integer, intent(out) :: info
+      integer, intent(in) :: n
+      real(wp), intent(inout) :: work(*)
+    end subroutine dspev
+  end interface
 
 contains
 
-
-subroutine solve_spev(matrix, eigval, eigvec, stat)
+  subroutine solve_spev(matrix, eigval, eigvec, stat)
     !> plain lapack call:
     !  dspev(jobz,uplo,n,matrix,eigval,eigvec,n,work,info)
 
@@ -56,33 +53,32 @@ subroutine solve_spev(matrix, eigval, eigvec, stat)
 
     info = 0
 
-    n   = max(1, size(eigval, 1))
-    np  = max(1, size(matrix, 1))
+    n = max(1, size(eigval, 1))
+    np = max(1, size(matrix, 1))
     ldz = max(1, size(eigvec, 1))
 
     ! dimension missmatch
-    if (np /= n*(n+1)/2 .or. ldz /= n) then
-        info = 1000
-    endif
+    if (np /= n*(n + 1)/2 .or. ldz /= n) then
+      info = 1000
+    end if
 
     if (info == 0) then
-       ! allocate work arrays with requested size
-       allocate(work(3*n), stat=info)
+      ! allocate work arrays with requested size
+      allocate (work(3*n), stat=info)
     end if
 
     ! call lapack routine
-    if(info == 0) then
-        call dspev(jobz, uplo, n, matrix, eigval, eigvec, ldz, work, info)
-    endif
+    if (info == 0) then
+      call dspev(jobz, uplo, n, matrix, eigval, eigvec, ldz, work, info)
+    end if
 
     ! error handler
     if (present(stat)) then
-        stat = info
-    else if(info.ne.0) then
-        error stop "[LAPACK] Solving eigenvalue problem failed!"
-    endif
+      stat = info
+    else if (info .ne. 0) then
+      error stop "[LAPACK] Solving eigenvalue problem failed!"
+    end if
 
-end subroutine solve_spev
-
+  end subroutine solve_spev
 
 end module linear_algebra

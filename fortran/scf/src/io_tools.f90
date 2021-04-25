@@ -2,13 +2,13 @@
 !  this module implements wrappers for common input tasks
 module io_tools
 
-    !> Always declare everything explicitly
-    implicit none
+  !> Always declare everything explicitly
+  implicit none
 
-    private
-    public :: read_line, read_argument
+  private
+  public :: read_line, read_argument
 
-    intrinsic :: present, get_command_argument, allocated
+  intrinsic :: present, get_command_argument, allocated
 
 contains
 
@@ -56,13 +56,13 @@ contains
 !  enddo read_lines
 !  end subroutine read_input_file
 !
-subroutine read_line(unit, line, iostat)
+  subroutine read_line(unit, line, iostat)
 
     !> Always declare everything explicitly
     implicit none
 
     !> IO unit to read a whole line from
-    integer,intent(in) :: unit
+    integer, intent(in) :: unit
 
     !> Buffer to save the content of the whole line to
     character(len=:), allocatable, intent(out) :: line
@@ -74,7 +74,7 @@ subroutine read_line(unit, line, iostat)
     intrinsic :: is_iostat_eor
 
     !> Size of the static buffer
-    integer, parameter :: buffersize=128
+    integer, parameter :: buffersize = 128
 
     !> Static buffer to read the line in chunks
     character(len=buffersize) :: buffer
@@ -87,21 +87,21 @@ subroutine read_line(unit, line, iostat)
 
     line = ''
     do
-        read(unit, '(a)', advance='no', iostat=err, size=size) &
-            &    buffer
-        if (err > 0) exit ! an error occured
-        line = line // buffer(:size)
-        if (err < 0) exit
-    enddo
+      read (unit, '(a)', advance='no', iostat=err, size=size) &
+          &    buffer
+      if (err > 0) exit ! an error occured
+      line = line//buffer(:size)
+      if (err < 0) exit
+    end do
     if (is_iostat_eor(err)) err = 0
-    if (present(iostat)) iostat=err
+    if (present(iostat)) iostat = err
 
-end subroutine read_line
+  end subroutine read_line
 
 !> read the `i'th commandline argument into `arg'
 !
 !  example for a simple parser
-!  
+!
 !  subroutine read_command_arguments(file,lgrad)
 !  use iso_fortran_env
 !  use io_tools
@@ -134,7 +134,7 @@ end subroutine read_line
 !  endif
 !  end subroutine read_command_arguments
 !
-subroutine read_argument(iarg, arg, iostat)
+  subroutine read_argument(iarg, arg, iostat)
 
     !> Always declare everything explicitly
     implicit none
@@ -154,21 +154,20 @@ subroutine read_argument(iarg, arg, iostat)
     !> Local error handle
     integer :: err
 
-    if (allocated(arg)) deallocate(arg)
+    if (allocated(arg)) deallocate (arg)
     call get_command_argument(iarg, length=length, status=err)
     if (err /= 0) then
-        if (present(iostat)) iostat = err
-        return
-    endif
-    allocate(character(len=length) :: arg, stat=err)
+      if (present(iostat)) iostat = err
+      return
+    end if
+    allocate (character(len=length) :: arg, stat=err)
     if (err /= 0) then
-        if (present(iostat)) iostat = err
-        return
-    endif
+      if (present(iostat)) iostat = err
+      return
+    end if
     call get_command_argument(iarg, arg, status=err)
     if (present(iostat)) iostat = err
 
-end subroutine read_argument
-
+  end subroutine read_argument
 
 end module io_tools

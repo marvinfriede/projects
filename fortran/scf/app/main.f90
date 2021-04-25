@@ -38,6 +38,9 @@ module scf_main
   !  call read_line(input, line)
   use io_tools, only: read_line
 
+  !> small helper functions for matrices
+  use array_funcs, only: is_mat_symmetric, is_mat_identity, get_dim_mat
+
   !> Always declare everything explicitly
   implicit none
 
@@ -61,7 +64,7 @@ contains
     !> IO unit bound to the input file
     integer, intent(in) :: input
 
-    !> amount of info printed during program run
+    !> amount of info printed during program run (0, 1, 2)
     integer, intent(in), optional :: print_level
 
     !> System specific data
@@ -114,13 +117,15 @@ contains
     real(wp), dimension(:, :), allocatable :: P ! density matrix
     integer, dimension(:, :), allocatable :: n_occ ! occupation matrix
 
+    ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     integer :: alloc_stat
     real(wp), dimension(:, :, :, :), allocatable :: two_ints ! 4D array of tei
 
     ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-101 format(//, "--------------------------------------------------")
-102 format("--------------------------------------------------")
+101 format(//, "---------------------------------------------------------------")
+102 format("---------------------------------------------------------------")
 
     !*********************************************************
     !********************* READING INPUT *********************
@@ -283,9 +288,9 @@ contains
     write (*, "(A)") "Energies (in Hartree)"
     write (*, 102)
 
-    write (*, "(A28,2X,F15.10)") "Nuclear repulsion energy ...", enn
-    write (*, "(A14,16X,F15.10)") "SCF energy ...", escf
-    write (*, "(A23,7X,F15.10)") "Hartree-Fock energy ... ", ehf
+    write (*, "(A28,7X,F15.10)") "Nuclear repulsion energy ...", enn
+    write (*, "(A14,21X,F15.10)") "SCF energy ...", escf
+    write (*, "(A23,12X,F15.10)") "Hartree-Fock energy ... ", ehf
 
     !*********************************************************
     !********************** PROPERTIES ***********************
@@ -296,6 +301,9 @@ contains
     write (*, 102)
 
     call check_normalization(S, P, nel)
+    call mulliken_analysis(S, P, chrg, bf_atom_map, nat)
+
+    ! call scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
 
     !*********************************************************
     !********************* DEALLOCATION **********************
@@ -310,6 +318,135 @@ contains
   !*********************************************************
   !****************** END MAIN FUNCTION ********************
   !*********************************************************
+
+  subroutine scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
+    implicit none
+
+    real(wp), dimension(:, :), allocatable, intent(in) :: P
+    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+    integer, intent(in) :: ng
+
+    !> charge density at point r
+    real(wp) :: rho
+
+    !> position vector
+    real(wp), dimension(3) :: r
+
+    integer :: i
+    integer, parameter :: n_steps = 100
+    real(wp) :: start, end, step_size
+
+    r = 0.0_wp
+    start = -0.7_wp
+    end = 0.7_wp
+    step_size = abs(end - start)/real(n_steps, wp)
+
+    do i = 0, n_steps
+      r(3) = start + i*step_size
+      call charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+      write (*, *) r(3), rho
+    end do
+
+  end subroutine scan_charge_density
+
+  subroutine charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+    implicit none
+    intrinsic :: sum, sqrt, exp
+
+    real(wp), dimension(3), intent(in) :: r
+    real(wp), dimension(:, :), allocatable, intent(in) :: P
+    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+    integer, intent(in) :: ng
+    real(wp), intent(out) :: rho
+
+    ! variables for routine
+    real(wp), parameter :: pi = 4.0_wp*atan(1.0_wp)
+    integer :: i, j, k, l, dim, alloc_stat
+    real(wp) :: kab
+    real(wp), dimension(:), allocatable :: alpha
+    real(wp), dimension(:), allocatable :: beta
+    real(wp), dimension(3) :: ra, rb, rp
+    real(wp):: a_plus_b, a_times_b, rab
+
+    dim = get_dim_mat(P)
+
+    allocate (alpha(dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (beta(dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+
+    rho = 0.0_wp
+    do i = 1, dim
+      alpha = expnts(:, i)
+      ra = xyz(:, bf_atom_map(i))
+      do j = 1, dim
+        beta = expnts(:, j)
+        rb = xyz(:, bf_atom_map(j))
+
+        !> | R_a - R_b | ** 2
+        rab = sum((ra - rb)**2)
+        do k = 1, ng
+          do l = 1, ng
+            a_plus_b = alpha(k) + beta(l)
+            a_times_b = alpha(k)*beta(l)
+            rp = (alpha(k)*ra + beta(l)*rb)/a_plus_b
+
+            !> prefactor of new Gaussian
+            kab = (2.0_wp*a_times_b/(a_plus_b*pi))**0.75_wp* &
+                  exp(-a_times_b/a_plus_b*rab)
+
+            !> calculate charge density with new Gaussian
+            rho = rho + P(i, j)*kab*exp(-a_plus_b*sum((r - rp)**2))
+          end do
+        end do
+      end do
+    end do
+
+  end subroutine charge_density
+
+  subroutine mulliken_analysis(S, P, chrg, bf_atom_map, nat)
+    implicit none
+
+    real(wp), dimension(:, :), allocatable, intent(in) :: S
+    real(wp), dimension(:, :), allocatable, intent(in) :: P
+    real(wp), dimension(:), allocatable, intent(in) :: chrg
+    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+    integer, intent(in) :: nat
+
+    ! variables for subroutine
+    real(wp), dimension(:), allocatable :: Q ! Mulliken charges
+    real(wp), dimension(:, :), allocatable :: temp
+    integer :: i, j, dim, alloc_stat
+
+    write (*, "(A20,15X)", advance="no") "Mulliken charges ..."
+
+    dim = get_dim_mat(S)
+
+    allocate (Q(nat), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (temp(dim, dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+
+    temp = matmul(S, P)
+    do i = 1, nat
+      q(i) = chrg(i)
+      do j = 1, dim
+        if (i == bf_atom_map(j)) then
+          q(i) = q(i) - temp(j, j)
+        end if
+      end do
+    end do
+
+    write (*, "(A4)") "done"
+    do i = 1, nat
+      write (*, "(A6,I1,28X,F8.5)") " Atom ", i, q(i)
+    end do
+
+  end subroutine mulliken_analysis
 
   subroutine check_normalization(S, P, nel)
     implicit none
@@ -343,8 +480,8 @@ contains
       write (*, "(A)") "failed"
     end if
 
-    write (*, "(A24,11X,I2)") " Expected # of electrons", nel
-    write (*, "(A26,9X,F4.1)") " Calculated # of electrons", sum
+    write (*, "(A24,11X,I1)") " Expected # of electrons", nel
+    write (*, "(A26,9X,F3.1)") " Calculated # of electrons", sum
   end subroutine check_normalization
 
   subroutine scf_loop(nbf, T, V, two_ints, X, n_occ, P, escf, &
@@ -368,15 +505,14 @@ contains
     real(wp) :: escf_old, ediff
 
     do i = 1, MAX_SCF
-      write (*, "(A,I2)") "Iteration ", i
+      write (*, "(A10,I2,A1,2X)", advance="no") "Iteration ", i, ":"
       escf_old = escf
       call iter_step(nbf, T, V, two_ints, X, n_occ, P, escf, &
                      print_level, is_initial=.false.)
 
       !> calc diff between iterations, print it and exit if below threshold
       ediff = abs(escf - escf_old)
-      write (*, "(A11,F15.10,A8)") "Difference:", ediff, " Hartree"
-      write (*, *) ""
+      write (*, "(2X,A9,F15.10)") "change =", ediff
       if (ediff < TOL_SCF) exit
     end do
 
@@ -387,6 +523,7 @@ contains
       error stop 1
     end if
 
+		write(*, *) ""
     write (*, "(A20,I2,A8)") "SCF converged after ", i, " cycles!"
   end subroutine scf_loop
 
@@ -409,7 +546,7 @@ contains
     real(wp), dimension(:), allocatable :: F_prime_packed ! packed F'
     real(wp), dimension(:), allocatable :: eps ! eigenvalues Fock matrix
     real(wp), dimension(:, :), allocatable :: C ! coefficient matrix
-    integer :: alloc_stat, i, j, k, l
+    integer :: alloc_stat, stat_lapack, i, j, k, l
 
     allocate (F(nbf, nbf), stat=alloc_stat)
     if (alloc_stat /= 0) error stop 1
@@ -467,14 +604,17 @@ contains
         write (*, *) "done"
         write (*, "(A29,11X)", advance="no") "Diagonalizing Fock matrix ..."
       end if
-
     end if
 
     !> pack Fock matrix for solve_spev
     call pack_matrix(F_prime, F_prime_packed)
 
     !> diagonalize Fock matrix, i.e. solve F'C' = C'e
-    call solve_spev(F_prime_packed, eps, C)
+    call solve_spev(F_prime_packed, eps, C, stat_lapack)
+    if (stat_lapack /= 0) then
+      write (*, *) "Lapack error: ", stat_lapack
+      error stop 1
+    end if
 
     ! print
     if (present(print_level)) then
@@ -508,7 +648,7 @@ contains
 
     !> calculate SCF energy
     call get_escf(F, T, V, P, escf)
-    write (*, "(A11,F15.10,A8)") "SCF Energy:", escf, " Hartree"
+    write (*, "(A7,F15.10)", advance="no") "E_SCF =", escf
   end subroutine iter_step
 
   subroutine set_n_occ(nbf, nel, n_occ)
@@ -543,15 +683,13 @@ contains
     real(wp), intent(out) :: escf
 
     ! variables for subroutine
-    integer, dimension(2) :: shape_mat
     integer :: dim
     integer :: i, alloc_stat
     real(wp) :: trace
     real(wp), dimension(:, :), allocatable :: temp !
 
     !> get shape of matrix
-    shape_mat = shape(F)
-    dim = shape_mat(1)
+    dim = get_dim_mat(F)
 
     !> matrix of which we need trace: (F + H0) * P
     allocate (temp(dim, dim), stat=alloc_stat)
@@ -665,104 +803,6 @@ contains
     end do
 
   end subroutine pack_matrix
-
-  logical function is_mat_symmetric(mat) result(is_symmetric)
-    implicit none
-    intrinsic :: abs
-
-    real(wp), intent(in), dimension(:, :):: mat
-    integer :: num_cols, num_rows
-    integer, dimension(2) :: shape_mat
-    integer :: i, j
-
-    !> thresholds for two reals being equal
-    real(wp), parameter :: TOL_EQ = 1.0e-8_wp
-
-    !> get shape of matrix
-    shape_mat = shape(mat)
-    num_rows = shape_mat(1)
-    num_cols = shape_mat(2)
-
-    if (num_cols /= num_rows) then
-      is_symmetric = .false.
-      return
-    end if
-
-    is_symmetric = .true.
-    outer: do i = 1, num_rows
-      inner: do j = 1, i
-        if (i /= j) then
-          if (abs(mat(i, j) - mat(j, i)) > TOL_EQ) then
-            is_symmetric = .false.
-            exit outer
-          end if
-        end if
-      end do inner
-    end do outer
-  end function is_mat_symmetric
-
-  logical function is_mat_identity(mat) result(is_identity)
-    implicit none
-    intrinsic :: abs
-
-    real(wp), intent(in), dimension(:, :), allocatable :: mat
-    integer :: num_cols, num_rows
-    integer, dimension(2) :: shape_mat
-    integer :: i, j
-
-    !> thresholds for two reals being equal
-    real(wp), parameter :: TOL_EQ = 1.0e-8_wp
-
-    !> get shape of matrix
-    shape_mat = shape(mat)
-    num_rows = shape_mat(1)
-    num_cols = shape_mat(2)
-
-    if (num_cols /= num_rows) then
-      is_identity = .false.
-    else
-      is_identity = .true.
-
-      outer: do i = 1, num_rows
-        inner: do j = 1, num_rows
-          if (i == j) then
-            if (abs(mat(i, i) - 1.0_wp) > TOL_EQ) then
-              is_identity = .false.
-              exit outer
-            end if
-          else
-            if (abs(mat(i, j)) > TOL_EQ) then
-              is_identity = .false.
-              exit outer
-            end if
-          end if
-        end do inner
-      end do outer
-
-    end if
-  end function is_mat_identity
-
-  integer function get_dim_mat(mat) result(dim)
-    implicit none
-    intrinsic :: abs
-
-    real(wp), intent(in), dimension(:, :), allocatable :: mat
-    integer :: num_cols, num_rows
-    integer, dimension(2) :: shape_mat
-
-    !> get shape of matrix
-    shape_mat = shape(mat)
-    num_rows = shape_mat(1)
-    num_cols = shape_mat(2)
-
-    !> only for symmetric matrices
-    if (num_cols /= num_rows) then
-      write (*, *) "Matrix not symmetric. Aborting..."
-      error stop 1
-    end if
-
-    dim = num_cols
-  end function get_dim_mat
 
   subroutine get_oneint(nbf, xyz, chrg, bf_atom_map, expnts, &
                         coeffs, S, V, T)
@@ -945,6 +985,5 @@ contains
       end do
     end do
   end subroutine
-
 end module scf_main
 
