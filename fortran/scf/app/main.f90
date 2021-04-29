@@ -1,4 +1,4 @@
-!> This is your module to write your very own SCF program.
+!> This is your module to ! writeyour very own SCF program.
 module scf_main
   !> Include standard Fortran environment for IO
   use iso_fortran_env, only: output_unit, error_unit
@@ -34,12 +34,13 @@ module scf_main
   use print_matrix, only: write_vector, write_matrix
 
   !> other tools that may help you jump ahead with I/O-heavy tasks
-  !  example:
-  !  call read_line(input, line)
+  !  example: call read_line(input, line)
   use io_tools, only: read_line
-
-  !> small helper functions for matrices
-  use array_funcs, only: is_mat_symmetric, is_mat_identity, get_dim_mat
+	
+  !> outsourced subroutines
+  use array_funcs
+  use mp2
+  use properties
 
   !> Always declare everything explicitly
   implicit none
@@ -47,7 +48,7 @@ module scf_main
   !> All subroutines within this module are not exported, except for scf_prog
   !  which is the entry point to your program
   private
-  public :: scf_prog
+  public :: scf_prog, opt_coords, opt_expnts, wp
 
   !> Selecting double precision real number
   integer, parameter :: wp = selected_real_kind(15)
@@ -56,51 +57,56 @@ contains
 
 !> This is the entry point to your program, do not modify the dummy arguments
 !  without adjusting the call in lib/prog.f90
-  subroutine scf_prog(input, print_level)
-
-    !> Always declare everything explicitly
+  subroutine scf_prog(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
+                      ehf, MAX_SCF, TOL_SCF, do_mp2, print_level)
     implicit none
 
-    !> IO unit bound to the input file
-    integer, intent(in) :: input
+    !> System specific data
+    !> Number of atoms
+    integer, intent(in) :: nat
+    !> Number of electrons
+    integer, intent(in) :: nel
+    !> Number of basis functions
+    integer, intent(in) :: nbf
+    !> number of primitive Gaussians in slater expansion (STO-nG)
+    integer, intent(in) :: ng
+
+    !> Atom coordinates of the system, all distances in bohr
+    real(wp), intent(in), allocatable :: xyz(:, :)
+
+    !> Nuclear charges
+    real(wp), intent(in), allocatable :: chrg(:)
+
+    !> Slater expnts of basis functions
+    real(wp), intent(in), allocatable :: zeta(:)
+
+    !> maps basis function to atom
+    !> e.g.: (1, 1, 2) -> 1st bf from A1, 2nd bf from A1, 3rd bf from A3
+    integer, intent(in), allocatable :: bf_atom_map(:)
+
+    !> convergence criteria
+    real(wp), intent(in) :: TOL_SCF
+    integer, intent(in) :: MAX_SCF
 
     !> amount of info printed during program run (0, 1, 2)
     integer, intent(in), optional :: print_level
 
-    !> System specific data
-    !> Number of atoms
-    integer :: nat
-    !> Number of electrons
-    integer :: nel
-    !> Number of basis functions
-    integer :: nbf ! -> nbf
+    !> do MP2 energy calculation at end
+    integer, intent(in), optional :: do_mp2
 
-    !> Atom coordinates of the system, all distances in bohr
-    real(wp), allocatable :: xyz(:, :)
+    !> HF energy
+    real(wp), intent(out) :: ehf
+    real(wp) :: emp2
 
-    !> Nuclear charges
-    real(wp), allocatable :: chrg(:)
-
-    !> Slater expnts of basis functions
-    real(wp), allocatable :: zeta(:)
-
-    !> maps basis function to atom
-    !> e.g.: (1, 1, 2) -> 1st bf from A1, 2nd bf from A1, 3rd bf from A3
-    integer, allocatable :: bf_atom_map(:)
+    real(wp), allocatable, dimension(:) :: eps
 
     ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !> energies
     !> nuclear repulsion energy
     real(wp) :: enn
-    real(wp) :: ehf
     real(wp) :: escf
 
-    real(wp), parameter :: TOL_SCF = 1.0e-10_wp
-    integer, parameter :: MAX_SCF = 100
-
     ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !> number of primitive Gaussians in slater expansion (STO-nG)
-    integer, parameter :: ng = 6
 
     !> expnts of primitive Gaussian functions
     real(wp), dimension(:, :), allocatable :: expnts
@@ -115,6 +121,7 @@ contains
     ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     real(wp), dimension(:, :), allocatable :: X ! orthonormalizer
     real(wp), dimension(:, :), allocatable :: P ! density matrix
+    real(wp), dimension(:, :), allocatable :: C ! coeffs matrix
     integer, dimension(:, :), allocatable :: n_occ ! occupation matrix
 
     ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -122,45 +129,8 @@ contains
     integer :: alloc_stat
     real(wp), dimension(:, :, :, :), allocatable :: two_ints ! 4D array of tei
 
-    ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 101 format(//, "---------------------------------------------------------------")
 102 format("---------------------------------------------------------------")
-
-    !*********************************************************
-    !********************* READING INPUT *********************
-    !*********************************************************
-
-    !> init all variables from input file
-    call read_file(input, xyz, chrg, zeta, bf_atom_map, nat, nel, nbf)
-
-    write (*, 101)
-    write (*, "(A)") "Settings"
-    write (*, 102)
-
-    write (*, "(A)") "Molecule"
-    write (*, "(A20,15X,I1)") " Number of atoms ...", nat
-    write (*, "(A24,11X,I1)") " Number of electrons ...", nel
-
-    write (*, "(A)") "Basis set"
-    write (*, "(A31,4X,I1)") " Number of Slater functions ...", nbf
-    write (*, "(A18,17X,A4,I1,A1)") " Gaussian Type ...", "STO-", ng, "G"
-
-    write (*, "(A)") "SCF"
-    write (*, "(A26,9X,A)") " Convergence criterion ...", "Energy"
-    write (*, "(A26,9X,ES7.1)") " Convergence threshold ...", TOL_SCF
-    write (*, "(A33,2X,I3)") " Maximal number of iterations ...", MAX_SCF
-
-    if (present(print_level)) then
-      if (print_level >= 1) then
-        write (*, 101)
-        write (*, "(A)") "Settings: extended output"
-        write (*, 102)
-        call write_matrix(xyz, name='Coordinates')
-        call write_vector(chrg, name="Charges")
-        call write_vector(real(bf_atom_map, wp), name="Mapping: basis function -> atom")
-      end if
-    end if
 
     !*********************************************************
     !********************** ALLOCATION ***********************
@@ -172,76 +142,100 @@ contains
     if (alloc_stat /= 0) error stop 1
     allocate (P(nbf, nbf), stat=alloc_stat)
     if (alloc_stat /= 0) error stop 1
+    allocate (S(nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (T(nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (V(nbf, nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
 
     !*********************************************************
     !*************** NUCLEAR REPULSION ENERGY ****************
     !*********************************************************
 
-    write (*, 101)
-    write (*, "(A)") "Precalculations"
-    write (*, 102)
+    if (present(print_level)) then
+      if (print_level >= 1) then
+        write (*, 101)
+        write (*, "(A)") "Precalculations"
+        write (*, 102)
+        write (*, "(A28,7X)", advance="no") "Nuclear repulsion energy ..."
+      end if
+    end if
 
     !> nuclear repulsion energy
-    write (*, "(A28,7X)", advance="no") "Nuclear repulsion energy ..."
     call get_enn(xyz, chrg, nat, enn)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A21,14X)", advance="no") "Gaussian orbitals ..."
+    end if
 
     !*********************************************************
     !******************* BASIS SET SETUP  ********************
     !*********************************************************
 
     !> basis set setup
-    write (*, "(A21,14X)", advance="no") "Gaussian orbitals ..."
     call expand_slater_wrapper(nbf, ng, zeta, expnts, coeffs)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A21,14X)", advance="no") "Occupation matrix ..."
+    end if
 
     !*********************************************************
     !******************* OCCUPATION MATRIX *******************
     !*********************************************************
 
     !> build (diagonal) occupation matrix
-    write (*, "(A21,14X)", advance="no") "Occupation matrix ..."
     call set_n_occ(nbf, nel, n_occ)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A26,9X)", advance="no") "One-electron integrals ..."
+    end if
 
     !*********************************************************
     !***************** ONE-ELECTRON INTEGRALS ****************
     !*********************************************************
 
-    write (*, "(A26,9X)", advance="no") "One-electron integrals ..."
     call get_oneint(nbf, xyz, chrg, bf_atom_map, expnts, coeffs, S, V, T)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A33,2X)", advance="no") "Packing one-electron matrices ..."
+    end if
 
     !> pack matrices if symmetric
-    write (*, "(A33,2X)", advance="no") "Packing one-electron matrices ..."
     call pack_matrix(S, S_packed)
     call pack_matrix(V, V_packed)
     call pack_matrix(T, T_packed)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A26,9X)", advance="no") "Two-electron integrals ..."
+    end if
 
     !*********************************************************
     !*************** TWO ELECTRON INTEGRALS ******************
     !*********************************************************
 
-    write (*, "(A26,9X)", advance="no") "Two-electron integrals ..."
     call get_twoint(nbf, xyz, expnts, coeffs, bf_atom_map, two_ints)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+      write (*, "(A29,6X)", advance="no") "Symmetric orthonormalizer ..."
+    end if
 
     !*********************************************************
     !************** SYMMETRIC ORTHONORMALIZER ****************
     !*********************************************************
 
     !> last argument optional, pass to check if X^T * S * X = 1
-    write (*, "(A29,6X)", advance="no") "Symmetric orthonormalizer ..."
     call sym_orthonormalizer(S_packed, nbf, X, S)
-    write (*, "(A)") "done"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A)") "done"
+    end if
 
     !*********************************************************
     !******************* EXTENDED OUTPUT *********************
     !*********************************************************
 
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 3) then
         write (*, 101)
         write (*, "(A)") "Precalculations: extended output"
         write (*, 102)
@@ -259,232 +253,88 @@ contains
     !******************** INITIAL GUESS **********************
     !*********************************************************
 
-    write (*, 101)
-    write (*, "(A)") "Initial Guess"
-    write (*, 102)
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, 101)
+      write (*, "(A)") "Initial Guess"
+      write (*, 102)
+    end if
 
     !> get initial density matrix
-    call iter_step(nbf, T, V, two_ints, X, n_occ, P, escf, print_level, &
-                   is_initial=.true.)
+    call iter_step(nbf, T, V, two_ints, X, n_occ, P, C, eps, escf, &
+                   print_level, 1)
 
     !*********************************************************
     !******************* SCF PROCEDURE ***********************
     !*********************************************************
 
-    write (*, 101)
-    write (*, "(A)") "SCF Iterations"
-    write (*, 102)
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, 101)
+      write (*, "(A)") "SCF Iterations"
+      write (*, 102)
+    end if
 
     !> scf loop
-    call scf_loop(nbf, T, V, two_ints, X, n_occ, P, escf, &
+    call scf_loop(nbf, T, V, two_ints, X, n_occ, P, C, eps, escf, &
                   MAX_SCF, TOL_SCF, print_level)
     ehf = escf + enn
-
-    !*********************************************************
-    !******************** PRINT RESULTS **********************
-    !*********************************************************
-
-    write (*, 101)
-    write (*, "(A)") "Energies (in Hartree)"
-    write (*, 102)
-
-    write (*, "(A28,7X,F15.10)") "Nuclear repulsion energy ...", enn
-    write (*, "(A14,21X,F15.10)") "SCF energy ...", escf
-    write (*, "(A23,12X,F15.10)") "Hartree-Fock energy ... ", ehf
 
     !*********************************************************
     !********************** PROPERTIES ***********************
     !*********************************************************
 
-    write (*, 101)
-    write (*, "(A)") "Properties"
-    write (*, 102)
-
-    call check_normalization(S, P, nel)
-    call mulliken_analysis(S, P, chrg, bf_atom_map, nat)
-
-    ! call scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
-
-    !*********************************************************
-    !********************* DEALLOCATION **********************
-    !*********************************************************
-    deallocate (zeta)
-    deallocate (chrg)
-    deallocate (xyz)
-    deallocate (expnts)
-    deallocate (coeffs)
-  end subroutine scf_prog
-
-  !*********************************************************
-  !****************** END MAIN FUNCTION ********************
-  !*********************************************************
-
-  subroutine scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
-    implicit none
-
-    real(wp), dimension(:, :), allocatable, intent(in) :: P
-    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
-    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
-    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
-    integer, intent(in) :: ng
-
-    !> charge density at point r
-    real(wp) :: rho
-
-    !> position vector
-    real(wp), dimension(3) :: r
-
-    integer :: i
-    integer, parameter :: n_steps = 100
-    real(wp) :: start, end, step_size
-
-    r = 0.0_wp
-    start = -0.7_wp
-    end = 0.7_wp
-    step_size = abs(end - start)/real(n_steps, wp)
-
-    do i = 0, n_steps
-      r(3) = start + i*step_size
-      call charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
-      write (*, *) r(3), rho
-    end do
-
-  end subroutine scan_charge_density
-
-  subroutine charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
-    implicit none
-    intrinsic :: sum, sqrt, exp
-
-    real(wp), dimension(3), intent(in) :: r
-    real(wp), dimension(:, :), allocatable, intent(in) :: P
-    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
-    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
-    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
-    integer, intent(in) :: ng
-    real(wp), intent(out) :: rho
-
-    ! variables for routine
-    real(wp), parameter :: pi = 4.0_wp*atan(1.0_wp)
-    integer :: i, j, k, l, dim, alloc_stat
-    real(wp) :: kab
-    real(wp), dimension(:), allocatable :: alpha
-    real(wp), dimension(:), allocatable :: beta
-    real(wp), dimension(3) :: ra, rb, rp
-    real(wp):: a_plus_b, a_times_b, rab
-
-    dim = get_dim_mat(P)
-
-    allocate (alpha(dim), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (beta(dim), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-
-    rho = 0.0_wp
-    do i = 1, dim
-      alpha = expnts(:, i)
-      ra = xyz(:, bf_atom_map(i))
-      do j = 1, dim
-        beta = expnts(:, j)
-        rb = xyz(:, bf_atom_map(j))
-
-        !> | R_a - R_b | ** 2
-        rab = sum((ra - rb)**2)
-        do k = 1, ng
-          do l = 1, ng
-            a_plus_b = alpha(k) + beta(l)
-            a_times_b = alpha(k)*beta(l)
-            rp = (alpha(k)*ra + beta(l)*rb)/a_plus_b
-
-            !> prefactor of new Gaussian
-            kab = (2.0_wp*a_times_b/(a_plus_b*pi))**0.75_wp* &
-                  exp(-a_times_b/a_plus_b*rab)
-
-            !> calculate charge density with new Gaussian
-            rho = rho + P(i, j)*kab*exp(-a_plus_b*sum((r - rp)**2))
-          end do
-        end do
-      end do
-    end do
-
-  end subroutine charge_density
-
-  subroutine mulliken_analysis(S, P, chrg, bf_atom_map, nat)
-    implicit none
-
-    real(wp), dimension(:, :), allocatable, intent(in) :: S
-    real(wp), dimension(:, :), allocatable, intent(in) :: P
-    real(wp), dimension(:), allocatable, intent(in) :: chrg
-    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
-    integer, intent(in) :: nat
-
-    ! variables for subroutine
-    real(wp), dimension(:), allocatable :: Q ! Mulliken charges
-    real(wp), dimension(:, :), allocatable :: temp
-    integer :: i, j, dim, alloc_stat
-
-    write (*, "(A20,15X)", advance="no") "Mulliken charges ..."
-
-    dim = get_dim_mat(S)
-
-    allocate (Q(nat), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (temp(dim, dim), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-
-    temp = matmul(S, P)
-    do i = 1, nat
-      q(i) = chrg(i)
-      do j = 1, dim
-        if (i == bf_atom_map(j)) then
-          q(i) = q(i) - temp(j, j)
-        end if
-      end do
-    end do
-
-    write (*, "(A4)") "done"
-    do i = 1, nat
-      write (*, "(A6,I1,28X,F8.5)") " Atom ", i, q(i)
-    end do
-
-  end subroutine mulliken_analysis
-
-  subroutine check_normalization(S, P, nel)
-    implicit none
-    intrinsic :: abs
-
-    real(wp), dimension(:, :), allocatable, intent(in) :: S
-    real(wp), dimension(:, :), allocatable, intent(in) :: P
-    integer :: nel
-
-    ! variables for routine
-    integer :: i, j, dim
-    real(wp) :: sum
-
-    !> thresholds for two reals being equal
-    real(wp), parameter :: TOL_EQ = 1.0e-8_wp
-
-    write (*, "(A23,12X)", advance="no") "Check normalization ..."
-
-    dim = get_dim_mat(S)
-
-    sum = 0.0_wp
-    do i = 1, dim
-      do j = 1, dim
-        sum = sum + P(i, j)*S(i, j)
-      end do
-    end do
-
-    if (abs(sum - real(nel, wp)) < TOL_EQ) then
-      write (*, "(A)") "done"
-    else
-      write (*, "(A)") "failed"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, 101)
+      write (*, "(A)") "Properties"
+      write (*, 102)
+      call check_normalization(S, P, nel)
+      call mulliken_analysis(S, P, chrg, bf_atom_map, nat)
     end if
 
-    write (*, "(A24,11X,I1)") " Expected # of electrons", nel
-    write (*, "(A26,9X,F3.1)") " Calculated # of electrons", sum
-  end subroutine check_normalization
+    !*********************************************************
+    !********************** MP2 ENERGY ***********************
+    !*********************************************************
 
-  subroutine scf_loop(nbf, T, V, two_ints, X, n_occ, P, escf, &
+    if (present(do_mp2) .and. do_mp2 == 1) then
+      if (present(print_level) .and. print_level >= 1) then
+        write (*, 101)
+        write (*, "(A)") "MP2"
+        write (*, 102)
+      end if
+
+      call mp2_8(two_ints, C, nel, eps, emp2, print_level)
+      ! write (*, *) "MP2 energy", emp2
+      ! call mp2_5(two_ints, C, nel, eps, emp2, print_level)
+      ! write (*, *) "MP2 energy", emp2
+    end if
+
+    !*********************************************************
+    !******************** PRINT RESULTS **********************
+    !*********************************************************
+
+    if (present(print_level) .and. print_level /= 0) then
+      write (*, 101)
+      write (*, "(A)") "Energies (in Hartree)"
+      write (*, 102)
+
+      write (*, "(A28,7X,F15.10)") "Nuclear repulsion energy ...", enn
+      write (*, "(A14,21X,F15.10)") "SCF energy ...", escf
+      write (*, "(A23,12X,F15.10)") "Hartree-Fock energy ... ", ehf
+      if (present(do_mp2) .and. do_mp2 == 1) then
+        write (*, "(A14,21X,F15.10)") "MP2 energy ...", emp2
+        write (*, "(A16,19X,F15.10)") "Total energy ...", ehf + emp2
+      else
+        write (*, "(A16,19X,F15.10)") "Total energy ...", ehf
+      end if
+    end if
+
+    ! call scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
+  end subroutine scf_prog
+
+!*****************************************************************************
+!**************************** END MAIN FUNCTION ******************************
+!*****************************************************************************
+
+  subroutine scf_loop(nbf, T, V, two_ints, X, n_occ, P, C, eps, escf, &
                       MAX_SCF, TOL_SCF, print_level)
     implicit none
 
@@ -498,6 +348,8 @@ contains
     integer, dimension(:, :), allocatable, intent(in) :: n_occ
     integer, optional, intent(in) :: print_level
     real(wp), dimension(:, :), allocatable, intent(inout) :: P
+    real(wp), dimension(:, :), allocatable, intent(out) :: C
+    real(wp), intent(out), dimension(:), allocatable :: eps
     real(wp), intent(inout) :: escf
 
     ! variables for routine
@@ -505,14 +357,22 @@ contains
     real(wp) :: escf_old, ediff
 
     do i = 1, MAX_SCF
-      write (*, "(A10,I2,A1,2X)", advance="no") "Iteration ", i, ":"
-      escf_old = escf
-      call iter_step(nbf, T, V, two_ints, X, n_occ, P, escf, &
-                     print_level, is_initial=.false.)
+      if (present(print_level) .and. print_level >= 1) then
+        write (*, "(A10,I2,A1,2X)", advance="no") "Iteration ", i, ":"
+      end if
 
-      !> calc diff between iterations, print it and exit if below threshold
+      escf_old = escf
+      call iter_step(nbf, T, V, two_ints, X, n_occ, P, C, eps, escf, &
+                     print_level, 0)
+
+      ! calc diff between iterations, print it and exit if below threshold
       ediff = abs(escf - escf_old)
-      write (*, "(2X,A9,F15.10)") "change =", ediff
+
+      if (present(print_level) .and. print_level >= 1) then
+        write (*, "(2X,A9,F15.10)") "change =", ediff
+      end if
+
+      ! check convergence
       if (ediff < TOL_SCF) exit
     end do
 
@@ -523,11 +383,13 @@ contains
       error stop 1
     end if
 
-		write(*, *) ""
-    write (*, "(A20,I2,A8)") "SCF converged after ", i, " cycles!"
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, *) ""
+      write (*, "(A20,I2,A8)") "SCF converged after ", i, " cycles!"
+    end if
   end subroutine scf_loop
 
-  subroutine iter_step(nbf, T, V, two_ints, X, n_occ, P, escf, print_level, is_initial)
+  subroutine iter_step(nbf, T, V, two_ints, X, n_occ, P, C, eps, escf, print_level, is_initial)
     implicit none
     integer, intent(in) :: nbf
     real(wp), intent(in), dimension(:, :), allocatable :: T
@@ -536,16 +398,16 @@ contains
     real(wp), intent(in), dimension(:, :), allocatable :: X
     integer, intent(in), dimension(:, :), allocatable :: n_occ
     integer, intent(in), optional :: print_level
-    logical, intent(in), optional :: is_initial
+    integer, intent(in), optional :: is_initial
     real(wp), intent(inout), dimension(:, :), allocatable :: P
+    real(wp), intent(out), dimension(:, :), allocatable :: C
+    real(wp), intent(out), dimension(:), allocatable :: eps ! eigvals Fock matrix
     real(wp), intent(out) :: escf
 
     ! variables for routine
     real(wp), dimension(:, :), allocatable :: F ! Fock matrix
     real(wp), dimension(:, :), allocatable :: F_prime ! transformed Fock matrix
     real(wp), dimension(:), allocatable :: F_prime_packed ! packed F'
-    real(wp), dimension(:), allocatable :: eps ! eigenvalues Fock matrix
-    real(wp), dimension(:, :), allocatable :: C ! coefficient matrix
     integer :: alloc_stat, stat_lapack, i, j, k, l
 
     allocate (F(nbf, nbf), stat=alloc_stat)
@@ -561,33 +423,31 @@ contains
 
     !print
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 2) then
         write (*, "(A24,16X)", advance="no") "Building Fock matrix ..."
       end if
     end if
 
     !> build initial Fock matrix: F = H0 = T + V
     F = T + V
-    if (present(is_initial)) then
-      if (is_initial .eqv. .false.) then
-        do i = 1, nbf
-          do j = 1, nbf
-            do k = 1, nbf
-              do l = 1, nbf
-                F(i, j) = F(i, j) + P(k, l)*( &
-                          two_ints(i, j, l, k) - 0.5_wp*two_ints(i, l, j, k))
-              end do
+    if (present(is_initial) .and. is_initial == 0) then
+      do i = 1, nbf
+        do j = 1, nbf
+          do k = 1, nbf
+            do l = 1, nbf
+              F(i, j) = F(i, j) + P(k, l)*( &
+                        two_ints(i, j, l, k) - 0.5_wp*two_ints(i, l, j, k))
             end do
           end do
         end do
-      end if
+      end do
     end if
 
     ! print
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 2) then
         write (*, *) "done"
-        if (print_level >= 2) then
+        if (print_level >= 3) then
           call write_matrix(F, name="Fock matrix")
           write (*, *) ""
         end if
@@ -595,12 +455,12 @@ contains
       end if
     end if
 
-    !> transform Fock matrix: F' = X**T * F * X
+    !> transform Fock matrix: F' = X**T * F * X (X symmetric: X**T = X)
     F_prime = matmul(matmul(transpose(X), F), X)
 
     ! print
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 2) then
         write (*, *) "done"
         write (*, "(A29,11X)", advance="no") "Diagonalizing Fock matrix ..."
       end if
@@ -618,9 +478,9 @@ contains
 
     ! print
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 2) then
         write (*, *) "done"
-        if (print_level >= 2) then
+        if (print_level >= 3) then
           call write_vector(eps, name="eigenvalues Fock matrix")
           write (*, *) ""
         end if
@@ -637,10 +497,10 @@ contains
 
     ! print
     if (present(print_level)) then
-      if (print_level >= 1) then
+      if (print_level >= 2) then
         write (*, *) "done"
       end if
-      if (print_level >= 2) then
+      if (print_level >= 3) then
         call write_matrix(P, name="density matrix P")
         write (*, *) ""
       end if
@@ -648,7 +508,9 @@ contains
 
     !> calculate SCF energy
     call get_escf(F, T, V, P, escf)
-    write (*, "(A7,F15.10)", advance="no") "E_SCF =", escf
+    if (present(print_level) .and. print_level >= 1) then
+      write (*, "(A7,F15.10)", advance="no") "E_SCF =", escf
+    end if
   end subroutine iter_step
 
   subroutine set_n_occ(nbf, nel, n_occ)
@@ -814,20 +676,13 @@ contains
     integer, intent(in), dimension(:), allocatable :: bf_atom_map
     real(wp), intent(in), dimension(:, :), allocatable :: expnts
     real(wp), intent(in), dimension(:, :), allocatable :: coeffs
-    real(wp), intent(out), dimension(:, :), allocatable :: S
-    real(wp), intent(out), dimension(:, :), allocatable :: T
-    real(wp), intent(out), dimension(:, :), allocatable :: V
+    real(wp), intent(inout), dimension(:, :), allocatable :: S
+    real(wp), intent(inout), dimension(:, :), allocatable :: T
+    real(wp), intent(inout), dimension(:, :), allocatable :: V
 
     ! variables for calculation
     real(wp) :: sab, vab, tab
-    integer :: i, j, alloc_stat
-
-    allocate (S(nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (T(nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (V(nbf, nbf), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
+    integer :: i, j
 
     do i = 1, nbf
       do j = 1, nbf
@@ -858,30 +713,27 @@ contains
     real(wp) :: tei
 
     do i = 1, nbf
-      do j = 1, nbf
-        do k = 1, nbf
-          do l = 1, nbf
-            if (i > j) then
-              ! write(*, *) "i > j", i, j, k, l, two_ints(j, i, k, l)
-              two_ints(i, j, k, l) = two_ints(j, i, k, l)
-            else if (k > l) then
-              ! write(*, *) "k > l", i, j, k, l, two_ints(i, j, l, k)
-              two_ints(i, j, k, l) = two_ints(i, j, l, k)
-              ! else if (i*(i + 1)*0.5 + j > k*(k + 1)*0.5 + l) then
-              !    write(*, *) "ij>kl", i, j, k, l, two_ints(k, l, i, j)
-              !   two_ints(i, j, k, l) = two_ints(k, l, i, j)
-            else
-              call twoint( &
-                xyz(:, bf_atom_map(i)), xyz(:, bf_atom_map(j)), &
-                xyz(:, bf_atom_map(k)), xyz(:, bf_atom_map(l)), &
-                expnts(:, i), expnts(:, j), &
-                expnts(:, k), expnts(:, l), &
-                coeffs(:, i), coeffs(:, j), &
-                coeffs(:, k), coeffs(:, l), &
-                tei)
-              two_ints(i, j, k, l) = tei
-              ! write (*, *) "call ", i, j, k, l, tei
-            end if
+      do j = 1, i
+        do k = 1, i
+          do l = 1, merge(j, k, i == k)
+            call twoint( &
+              xyz(:, bf_atom_map(i)), xyz(:, bf_atom_map(j)), &
+              xyz(:, bf_atom_map(k)), xyz(:, bf_atom_map(l)), &
+              expnts(:, i), expnts(:, j), &
+              expnts(:, k), expnts(:, l), &
+              coeffs(:, i), coeffs(:, j), &
+              coeffs(:, k), coeffs(:, l), &
+              tei)
+
+            two_ints(i, j, k, l) = tei
+            two_ints(j, i, k, l) = tei
+            two_ints(i, j, l, k) = tei
+            two_ints(j, i, l, k) = tei
+
+            two_ints(k, l, i, j) = tei
+            two_ints(k, l, j, i) = tei
+            two_ints(l, k, i, j) = tei
+            two_ints(l, k, j, i) = tei
           end do
         end do
       end do
@@ -937,53 +789,273 @@ contains
     end do
   end subroutine get_enn
 
-  subroutine read_file(input, xyz, chrg, zeta, bf_atom_map, nat, nel, nbf)
+!*****************************************************************************
+!******************************** OPTIMIZERS *********************************
+!*****************************************************************************
+
+  subroutine opt_coords(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
+                        MAX_SCF, TOL_SCF, MAX_OPT_GEOM, TOL_OPT, ETA, &
+                        COORD_STEP_SIZE, print_level)
     implicit none
 
-    ! in and out variables
-    integer, intent(in) :: input
-    real(wp), allocatable, intent(out) :: xyz(:, :)
-    real(wp), allocatable, intent(out) :: chrg(:)
-    real(wp), allocatable, intent(out) :: zeta(:)
-    integer, allocatable, intent(out) :: bf_atom_map(:)
-    integer, intent(out) :: nat
-    integer, intent(out) :: nel
-    integer, intent(out) :: nbf
+    integer, intent(in) :: nat
+    integer, intent(in) :: nel
+    integer, intent(in) :: nbf
+    integer, intent(in) :: ng
+    real(wp), intent(inout), dimension(:, :), allocatable :: xyz
+    real(wp), intent(in), dimension(:), allocatable :: chrg
+    real(wp), intent(in), dimension(:), allocatable :: zeta
+    integer, intent(in), dimension(:), allocatable :: bf_atom_map
+    integer, intent(in) :: MAX_SCF
+    integer, intent(in) :: MAX_OPT_GEOM
+    real(wp), intent(in) :: TOL_SCF
+    real(wp), intent(in) :: TOL_OPT
+    real(wp), intent(in) :: COORD_STEP_SIZE
+    real(wp), intent(in) :: ETA
+    integer, optional, intent(in) :: print_level
 
-    ! variables for calculation
-    integer :: io_stat, alloc_stat, i, j
-    integer :: nbf_of_atom
-    integer :: counter
-    counter = 1
+    ! variables for routine
+    real(wp), allocatable, dimension(:, :) :: temp
+    real(wp), allocatable, dimension(:, :) :: grad_coords
+    integer :: alloc_stat, i, j, k
+    real(wp) :: ehf1, ehf2, eta_new
 
-    ! read first line containing info vor allocation
-    read (input, *, iostat=io_stat) nat, nel, nbf
-    if (io_stat /= 0) error stop 1
-
-    ! memory allocation of arrays
-    allocate (zeta(nbf), stat=alloc_stat)
+    allocate (temp(3, nat), stat=alloc_stat)
     if (alloc_stat /= 0) error stop 1
-    allocate (chrg(nat), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (xyz(3, nat), stat=alloc_stat)
-    if (alloc_stat /= 0) error stop 1
-    allocate (bf_atom_map(nbf), stat=alloc_stat)
+    allocate (grad_coords(3, nat), stat=alloc_stat)
     if (alloc_stat /= 0) error stop 1
 
-    ! read rest of file
-    ! iterate over number of atoms
-    do i = 1, nat
-      read (input, *, iostat=io_stat) xyz(:, i), chrg(i), nbf_of_atom
-      if (io_stat /= 0) exit
+    write (*, "(A)") "Starting iterations..."
+    eta_new = ETA
+    steep: do k = 1, MAX_OPT_GEOM
+      grad_outer: do i = 1, 3
+        grad_inner: do j = 1, nat
+          ! reset coordinates because only one value changes
+          temp = xyz
+          temp(i, j) = xyz(i, j) + COORD_STEP_SIZE
+          call scf_prog(nat, nel, nbf, ng, temp, chrg, zeta, &
+                        bf_atom_map, ehf1, MAX_SCF, TOL_SCF, 0, 0)
 
-      ! iterate over number of basis functions of this atom
-      do j = 1, nbf_of_atom
-        read (input, *, iostat=io_stat) zeta(counter)
-        if (io_stat /= 0) exit
-        bf_atom_map(counter) = i
-        counter = counter + 1
-      end do
-    end do
-  end subroutine
+          temp(i, j) = xyz(i, j) - COORD_STEP_SIZE
+          call scf_prog(nat, nel, nbf, ng, temp, chrg, zeta, &
+                        bf_atom_map, ehf2, MAX_SCF, TOL_SCF, 0, 0)
+
+          grad_coords(i, j) = (ehf2 - ehf1)/(2*COORD_STEP_SIZE)
+        end do grad_inner
+      end do grad_outer
+
+      !> exit if number of iteration exceeds maximum
+      if (k >= MAX_OPT_GEOM) then
+        write (*, "(A)") "Maximum number of iterations reached."
+        write (*, "(A)") "Geometry not converged!"
+        error stop 1
+      end if
+
+      ! calculate new coordinates
+      xyz = xyz + eta_new*grad_coords
+
+      if (present(print_level) .and. print_level >= 1) then
+        write (*, "(A10,I3,A1,2X)", advance="no") "Iteration ", k, ":"
+        write (*, "(A15,F15.10)") "RMS(gradient) =", rms(grad_coords)
+      end if
+
+      ! check if converged
+      if (rms(grad_coords) < TOL_OPT) exit steep
+
+      ! "dynamic" learning rate for better convergence
+      if (k == 10) then
+        eta_new = 1.0_wp
+      else if (k == 20) then
+        eta_new = 5.0_wp
+      else if (k == 50) then
+        eta_new = 10.0_wp
+      else if (k == 100) then
+        eta_new = 20.0_wp
+      end if
+
+    end do steep
+
+    write (*, "(A)") ""
+    write (*, "(A)") "Stationary point found!"
+    write (*, "(A36,I3,A7)") "Geometry optimization finished after ", &
+      k, " steps."
+    write (*, "(A)") "Performing final energy evaluation on optimized coordinates."
+    if (present(print_level) .and. print_level >= 2) then
+      call write_matrix(xyz, name="Optimized coordinates")
+    end if
+
+  end subroutine opt_coords
+
+  subroutine opt_expnts(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
+                        MAX_SCF, TOL_SCF, MAX_OPT_EXP, TOL_OPT, ETA, &
+                        EXPNTS_STEP_SIZE, print_level)
+    implicit none
+
+    integer, intent(in) :: nat
+    integer, intent(in) :: nel
+    integer, intent(in) :: nbf
+    integer, intent(in) :: ng
+    real(wp), intent(in), dimension(:, :), allocatable :: xyz
+    real(wp), intent(in), dimension(:), allocatable :: chrg
+    real(wp), intent(inout), dimension(:), allocatable :: zeta
+    integer, intent(in), dimension(:), allocatable :: bf_atom_map
+    integer, intent(in) :: MAX_SCF
+    integer, intent(in) :: MAX_OPT_EXP
+    real(wp), intent(in) :: TOL_SCF
+    real(wp), intent(in) :: TOL_OPT
+    real(wp), intent(in) :: EXPNTS_STEP_SIZE
+    real(wp), intent(in) :: ETA
+    integer, optional, intent(in) :: print_level
+
+    ! variables for routine
+    real(wp), allocatable, dimension(:) :: temp_expnts
+    real(wp), allocatable, dimension(:) :: grad_expnts
+    integer :: alloc_stat, i, k
+    real(wp) :: ehf1, ehf2, eta_new
+
+    allocate (temp_expnts(nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (grad_expnts(nbf), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+
+    write (*, "(A)") "Starting iterations..."
+    eta_new = ETA
+    steep_expnts: do k = 1, MAX_OPT_EXP
+      expnts: do i = 1, nbf
+        temp_expnts = zeta
+        temp_expnts(i) = zeta(i) + EXPNTS_STEP_SIZE
+        call scf_prog(nat, nel, nbf, ng, xyz, chrg, temp_expnts, &
+                      bf_atom_map, ehf1, MAX_SCF, TOL_SCF, 0, 0)
+
+        temp_expnts(i) = zeta(i) - EXPNTS_STEP_SIZE
+        call scf_prog(nat, nel, nbf, ng, xyz, chrg, temp_expnts, &
+                      bf_atom_map, ehf2, MAX_SCF, TOL_SCF, 0, 0)
+
+        grad_expnts(i) = (ehf2 - ehf1)/(2*EXPNTS_STEP_SIZE)
+      end do expnts
+
+      ! calculate new exponents
+      zeta = zeta + eta*grad_expnts
+
+      if (present(print_level) .and. print_level >= 1) then
+        write (*, "(A10,I3,A1,2X)", advance="no") "Iteration ", k, ":"
+        write (*, "(A15,F15.10)") "RMS(exponents) =", rms_vec(grad_expnts)
+      end if
+
+      if (rms_vec(grad_expnts) < TOL_OPT) exit steep_expnts
+
+      ! "dynamic" learning rate for better convergence
+      if (k == 100) then
+        eta_new = 1.0_wp
+      else if (k == 200) then
+        eta_new = 5.0_wp
+      else if (k == 300) then
+        eta_new = 10.0_wp
+      end if
+    end do steep_expnts
+
+    write (*, "(A)") ""
+    write (*, "(A)") "Stationary point found!"
+    write (*, "(A36,I3,A7)") "Exponent optimization finished after ", &
+      k, " steps."
+    write (*, "(A)") "Performing final energy evaluation on optimized coordinates."
+    if (present(print_level) .and. print_level >= 2) then
+      call write_matrix(xyz, name="Optimized exponents")
+    end if
+  end subroutine opt_expnts
+
+!*****************************************************************************
+!****************************** CHARGE DENSITY *******************************
+!*****************************************************************************
+
+  ! subroutine scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
+  !   implicit none
+
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: P
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+  !   integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+  !   integer, intent(in) :: ng
+
+  !   !> charge density at point r
+  !   real(wp) :: rho
+
+  !   !> position vector
+  !   real(wp), dimension(3) :: r
+
+  !   integer :: i
+  !   integer, parameter :: n_steps = 100
+  !   real(wp) :: start, end, step_size
+
+  !   r = 0.0_wp
+  !   start = -0.7_wp
+  !   end = 0.7_wp
+  !   step_size = abs(end - start)/real(n_steps, wp)
+
+  !   do i = 0, n_steps
+  !     r(3) = start + i*step_size
+  !     call charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+  !     write(*, *) r(3), rho
+  !   end do
+
+  ! end subroutine scan_charge_density
+
+  ! subroutine charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+  !   implicit none
+  !   intrinsic :: sum, sqrt, exp
+
+  !   real(wp), dimension(3), intent(in) :: r
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: P
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+  !   real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+  !   integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+  !   integer, intent(in) :: ng
+  !   real(wp), intent(out) :: rho
+
+  !   ! variables for routine
+  !   real(wp), parameter :: pi = 4.0_wp*atan(1.0_wp)
+  !   integer :: i, j, k, l, dim, alloc_stat
+  !   real(wp) :: kab
+  !   real(wp), dimension(:), allocatable :: alpha
+  !   real(wp), dimension(:), allocatable :: beta
+  !   real(wp), dimension(3) :: ra, rb, rp
+  !   real(wp):: a_plus_b, a_times_b, rab
+
+  !   dim = get_dim_mat(P)
+
+  !   allocate (alpha(dim), stat=alloc_stat)
+  !   if (alloc_stat /= 0) error stop 1
+  !   allocate (beta(dim), stat=alloc_stat)
+  !   if (alloc_stat /= 0) error stop 1
+
+  !   rho = 0.0_wp
+  !   do i = 1, dim
+  !     alpha = expnts(:, i)
+  !     ra = xyz(:, bf_atom_map(i))
+  !     do j = 1, dim
+  !       beta = expnts(:, j)
+  !       rb = xyz(:, bf_atom_map(j))
+
+  !       !> | R_a - R_b | ** 2
+  !       rab = sum((ra - rb)**2)
+  !       do k = 1, ng
+  !         do l = 1, ng
+  !           a_plus_b = alpha(k) + beta(l)
+  !           a_times_b = alpha(k)*beta(l)
+  !           rp = (alpha(k)*ra + beta(l)*rb)/a_plus_b
+
+  !           !> prefactor of new Gaussian
+  !           kab = (2.0_wp*a_times_b/(a_plus_b*pi))**0.75_wp* &
+  !                 exp(-a_times_b/a_plus_b*rab)
+
+  !           !> calculate charge density with new Gaussian
+  !           rho = rho + P(i, j)*kab*exp(-a_plus_b*sum((r - rp)**2))
+  !         end do
+  !       end do
+  !     end do
+  !   end do
+
+  ! end subroutine charge_density
+
 end module scf_main
 

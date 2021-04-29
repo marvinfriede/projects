@@ -2,7 +2,7 @@ module array_funcs
   implicit none
 
   private
-  public :: is_mat_identity, is_mat_symmetric, get_dim_mat
+  public :: is_mat_identity, is_mat_symmetric, get_dim_mat, rms, rms_vec
 
   integer, parameter :: wp = selected_real_kind(15)
 
@@ -104,5 +104,23 @@ contains
 
     dim = num_cols
   end function get_dim_mat
+
+  real(wp) function rms(mat) result(val)
+    implicit none
+    intrinsic :: sqrt, sum
+
+    real(wp), intent(in), dimension(:, :), allocatable :: mat
+
+    val = sqrt(sum(mat**2)/size(mat))
+  end function rms
+
+  real(wp) function rms_vec(vec) result(val)
+    implicit none
+    intrinsic :: sqrt, sum
+
+    real(wp), intent(in), dimension(:), allocatable :: vec
+
+    val = sqrt(sum(vec**2)/size(vec))
+  end function rms_vec
 
 end module array_funcs
