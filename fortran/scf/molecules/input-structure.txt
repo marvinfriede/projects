@@ -1,3 +1,0 @@
-(# atoms) (# electrons) (total # of bf)
-(3 cartesian coordinates in bohr) (nuclear charge) (# bf for this atom)
-(exponent)

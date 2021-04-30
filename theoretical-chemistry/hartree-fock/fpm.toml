@@ -1,0 +1,5 @@
+name = "scf"
+
+[[executable]]
+name = "hartree-fock"
+main = "main.f90"
