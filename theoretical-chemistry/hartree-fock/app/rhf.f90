@@ -301,10 +301,8 @@ contains
         write (*, 102)
       end if
 
-      call mp2_8(two_ints, C, nel, eps, emp2, print_level)
-      ! write (*, *) "MP2 energy", emp2
-      ! call mp2_5(two_ints, C, nel, eps, emp2, print_level)
-      ! write (*, *) "MP2 energy", emp2
+      call mp2_5(two_ints, C, nel, eps, emp2, print_level)
+      ! call mp2_8(two_ints, C, nel, eps, emp2, print_level)
     end if
 
     !*********************************************************
@@ -421,9 +419,10 @@ contains
     allocate (eps(nbf), stat=alloc_stat)
     if (alloc_stat /= 0) error stop 1
 
-    !print
+    !> print
     if (present(print_level)) then
       if (print_level >= 2) then
+        write (*, *) ""
         write (*, "(A24,16X)", advance="no") "Building Fock matrix ..."
       end if
     end if
@@ -443,7 +442,7 @@ contains
       end do
     end if
 
-    ! print
+    !> print
     if (present(print_level)) then
       if (print_level >= 2) then
         write (*, *) "done"
@@ -458,10 +457,14 @@ contains
     !> transform Fock matrix: F' = X**T * F * X (X symmetric: X**T = X)
     F_prime = matmul(matmul(transpose(X), F), X)
 
-    ! print
+    !> print
     if (present(print_level)) then
       if (print_level >= 2) then
         write (*, *) "done"
+        if (print_level >= 3) then
+          call write_matrix(F_prime, name="transformed Fock matrix")
+          write (*, *) ""
+        end if
         write (*, "(A29,11X)", advance="no") "Diagonalizing Fock matrix ..."
       end if
     end if
@@ -476,7 +479,7 @@ contains
       error stop 1
     end if
 
-    ! print
+    !> print
     if (present(print_level)) then
       if (print_level >= 2) then
         write (*, *) "done"
@@ -495,7 +498,7 @@ contains
     !> P = C * n0 * C**T
     P = matmul(matmul(C, n_occ), transpose(C))
 
-    ! print
+    !> print
     if (present(print_level)) then
       if (print_level >= 2) then
         write (*, *) "done"
@@ -715,7 +718,7 @@ contains
     do i = 1, nbf
       do j = 1, i
         do k = 1, i
-          do l = 1, merge(j, k, i == k)
+          do l = 1, merge(j, k, i == k) ! l to j, except if i=k, then l to k
             call twoint( &
               xyz(:, bf_atom_map(i)), xyz(:, bf_atom_map(j)), &
               xyz(:, bf_atom_map(k)), xyz(:, bf_atom_map(l)), &
@@ -844,13 +847,6 @@ contains
         end do grad_inner
       end do grad_outer
 
-      !> exit if number of iteration exceeds maximum
-      if (k >= MAX_OPT_GEOM) then
-        write (*, "(A)") "Maximum number of iterations reached."
-        write (*, "(A)") "Geometry not converged!"
-        error stop 1
-      end if
-
       ! calculate new coordinates
       xyz = xyz + eta_new*grad_coords
 
@@ -861,6 +857,13 @@ contains
 
       ! check if converged
       if (rms(grad_coords) < TOL_OPT) exit steep
+
+			!> exit if number of iteration exceeds maximum
+      if (k >= MAX_OPT_GEOM) then
+        write (*, "(A)") "Maximum number of iterations reached."
+        write (*, "(A)") "Geometry not converged!"
+        error stop 1
+      end if
 
       ! "dynamic" learning rate for better convergence
       if (k == 10) then
@@ -942,15 +945,31 @@ contains
         write (*, "(A15,F15.10)") "RMS(exponents) =", rms_vec(grad_expnts)
       end if
 
+			! check if converged
       if (rms_vec(grad_expnts) < TOL_OPT) exit steep_expnts
 
+			!> exit if number of iteration exceeds maximum
+      if (k >= MAX_OPT_EXP) then
+        write (*, "(A)") "Maximum number of iterations reached."
+        write (*, "(A)") "Geometry not converged!"
+        error stop 1
+      end if
+
       ! "dynamic" learning rate for better convergence
-      if (k == 100) then
+      if (k == 10) then
         eta_new = 1.0_wp
-      else if (k == 200) then
+      else if (k == 20) then
         eta_new = 5.0_wp
-      else if (k == 300) then
+      else if (k == 30) then
         eta_new = 10.0_wp
+      else if (k == 50) then
+        eta_new = 20.0_wp
+			else if (k == 100) then
+        eta_new = 30.0_wp
+			else if (k == 150) then
+        eta_new = 50.0_wp
+			else if (k == 200) then
+        eta_new = 100.0_wp
       end if
     end do steep_expnts
 
@@ -968,94 +987,116 @@ contains
 !****************************** CHARGE DENSITY *******************************
 !*****************************************************************************
 
-  ! subroutine scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
-  !   implicit none
+  subroutine scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
+    implicit none
 
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: P
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: expnts
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: xyz
-  !   integer, dimension(:), allocatable, intent(in) :: bf_atom_map
-  !   integer, intent(in) :: ng
+    real(wp), dimension(:, :), allocatable, intent(in) :: P
+    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+    integer, intent(in) :: ng
 
-  !   !> charge density at point r
-  !   real(wp) :: rho
+    !> charge density at point r
+    real(wp) :: rho
 
-  !   !> position vector
-  !   real(wp), dimension(3) :: r
+    !> position vector
+    real(wp), dimension(3) :: r
 
-  !   integer :: i
-  !   integer, parameter :: n_steps = 100
-  !   real(wp) :: start, end, step_size
+    integer :: i
+    integer, parameter :: n_steps = 100
+    real(wp) :: start, end, step_size
 
-  !   r = 0.0_wp
-  !   start = -0.7_wp
-  !   end = 0.7_wp
-  !   step_size = abs(end - start)/real(n_steps, wp)
+    r = 0.0_wp
+    start = -0.7_wp
+    end = 0.7_wp
+    step_size = abs(end - start)/real(n_steps, wp)
 
-  !   do i = 0, n_steps
-  !     r(3) = start + i*step_size
-  !     call charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
-  !     write(*, *) r(3), rho
-  !   end do
+    do i = 0, n_steps
+      r(3) = start + i*step_size
+      call charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+      write (*, *) r(3), rho
+    end do
 
-  ! end subroutine scan_charge_density
+  end subroutine scan_charge_density
 
-  ! subroutine charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
-  !   implicit none
-  !   intrinsic :: sum, sqrt, exp
+  subroutine charge_density(r, P, expnts, xyz, bf_atom_map, ng, rho)
+    ! psi(r) ... molecular orbital (occupied)
+    ! phi(r) ... basis functions
+    ! C      ... expansion coefficients
+    !
+    !              N/2                     N/2
+    ! rho(r) = 2 * sum |psi_a(r)|**2 = 2 * sum (psi_a(r) * psi_a(r))
+    !                                             a                       a
+    !
+    !              N/2
+    ! rho(r) = 2 * sum [ sum (C_mu,a * phi_mu(r)) * sum (C_nu,a * phi_nu(r)) ]
+    !                                             a    mu                         nu
+    !
+    !                       N/2
+    ! rho(r) = sum sum [2 * sum (C_mu,a * C_nu,a) ] phi_mu(r) * phi_nu(r))
+    !          mu  nu        a
+    !
+    !
+    ! rho(r) = sum sum (P_nu,mu * phi_mu(r) * phi_nu(r))
+    !          mu  nu
+    !
+    ! then use Gaussian product theorem
 
-  !   real(wp), dimension(3), intent(in) :: r
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: P
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: expnts
-  !   real(wp), dimension(:, :), allocatable, intent(in) :: xyz
-  !   integer, dimension(:), allocatable, intent(in) :: bf_atom_map
-  !   integer, intent(in) :: ng
-  !   real(wp), intent(out) :: rho
+    implicit none
+    intrinsic :: sum, sqrt, exp
 
-  !   ! variables for routine
-  !   real(wp), parameter :: pi = 4.0_wp*atan(1.0_wp)
-  !   integer :: i, j, k, l, dim, alloc_stat
-  !   real(wp) :: kab
-  !   real(wp), dimension(:), allocatable :: alpha
-  !   real(wp), dimension(:), allocatable :: beta
-  !   real(wp), dimension(3) :: ra, rb, rp
-  !   real(wp):: a_plus_b, a_times_b, rab
+    real(wp), dimension(3), intent(in) :: r
+    real(wp), dimension(:, :), allocatable, intent(in) :: P
+    real(wp), dimension(:, :), allocatable, intent(in) :: expnts
+    real(wp), dimension(:, :), allocatable, intent(in) :: xyz
+    integer, dimension(:), allocatable, intent(in) :: bf_atom_map
+    integer, intent(in) :: ng
+    real(wp), intent(out) :: rho
 
-  !   dim = get_dim_mat(P)
+    ! variables for routine
+    real(wp), parameter :: pi = 4.0_wp*atan(1.0_wp)
+    integer :: i, j, k, l, dim, alloc_stat
+    real(wp) :: kab
+    real(wp), dimension(:), allocatable :: alpha
+    real(wp), dimension(:), allocatable :: beta
+    real(wp), dimension(3) :: ra, rb, rp
+    real(wp):: a_plus_b, a_times_b, rab
 
-  !   allocate (alpha(dim), stat=alloc_stat)
-  !   if (alloc_stat /= 0) error stop 1
-  !   allocate (beta(dim), stat=alloc_stat)
-  !   if (alloc_stat /= 0) error stop 1
+    dim = get_dim_mat(P)
 
-  !   rho = 0.0_wp
-  !   do i = 1, dim
-  !     alpha = expnts(:, i)
-  !     ra = xyz(:, bf_atom_map(i))
-  !     do j = 1, dim
-  !       beta = expnts(:, j)
-  !       rb = xyz(:, bf_atom_map(j))
+    allocate (alpha(dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+    allocate (beta(dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
 
-  !       !> | R_a - R_b | ** 2
-  !       rab = sum((ra - rb)**2)
-  !       do k = 1, ng
-  !         do l = 1, ng
-  !           a_plus_b = alpha(k) + beta(l)
-  !           a_times_b = alpha(k)*beta(l)
-  !           rp = (alpha(k)*ra + beta(l)*rb)/a_plus_b
+    rho = 0.0_wp
+    do i = 1, dim
+      alpha = expnts(:, i)
+      ra = xyz(:, bf_atom_map(i))
+      do j = 1, dim
+        beta = expnts(:, j)
+        rb = xyz(:, bf_atom_map(j))
 
-  !           !> prefactor of new Gaussian
-  !           kab = (2.0_wp*a_times_b/(a_plus_b*pi))**0.75_wp* &
-  !                 exp(-a_times_b/a_plus_b*rab)
+        !> | R_a - R_b | ** 2
+        rab = sum((ra - rb)**2)
+        do k = 1, ng
+          do l = 1, ng
+            a_plus_b = alpha(k) + beta(l)
+            a_times_b = alpha(k)*beta(l)
+            rp = (alpha(k)*ra + beta(l)*rb)/a_plus_b
 
-  !           !> calculate charge density with new Gaussian
-  !           rho = rho + P(i, j)*kab*exp(-a_plus_b*sum((r - rp)**2))
-  !         end do
-  !       end do
-  !     end do
-  !   end do
+            !> prefactor of new Gaussian
+            kab = (2.0_wp*a_times_b/(a_plus_b*pi))**0.75_wp* &
+                  exp(-a_times_b/a_plus_b*rab)
 
-  ! end subroutine charge_density
+            !> calculate charge density with new Gaussian
+            rho = rho + P(i, j)*kab*exp(-a_plus_b*sum((r - rp)**2))
+          end do
+        end do
+      end do
+    end do
+
+  end subroutine charge_density
 
 end module scf_main
 

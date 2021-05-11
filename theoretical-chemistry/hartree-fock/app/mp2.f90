@@ -39,34 +39,59 @@ contains
     if (alloc_stat /= 0) error stop 1
 
     ! AO to MO transformation (scaling with M⁵)
-    mo = 0.0_wp
-    temp = two_ints
-
     ! trafo 1
+    mo = 0.0_wp
     do i = 1, dim
-      do r = 1, dim
-        mo(:, :, :, i) = mo(:, :, :, i) + C(r, i)*two_ints(:, :, :, r)
-      end do
-      temp(:, :, :, i) = mo(:, :, :, i)
-
-      ! trafo 2
       do j = 1, dim
-        do s = 1, dim
-          mo(:, :, j, i) = mo(:, :, j, i) + C(s, j)*temp(:, :, s, i)
-        end do
-        temp(:, :, j, i) = mo(:, :, j, i)
-
-        ! trafo 3
         do k = 1, dim
-          do t = 1, dim
-            mo(:, k, j, i) = mo(:, k, j, i) + C(k, t)*temp(:, t, j, i)
+          do l = 1, dim
+            do r = 1, dim
+              mo(i, j, k, l) = mo(i, j, k, l) + C(r, l)*two_ints(i, j, k, r)
+            end do
           end do
-          temp(:, k, j, i) = mo(:, k, j, i)
+        end do
+      end do
+    end do
 
-          ! trafo 4
+    ! trafo 2
+    temp = mo
+    mo = 0.0_wp
+    do i = 1, dim
+      do j = 1, dim
+        do k = 1, dim
+          do l = 1, dim
+            do s = 1, dim
+              mo(i, j, k, l) = mo(i, j, k, l) + C(s, k)*temp(i, j, s, l)
+            end do
+          end do
+        end do
+      end do
+    end do
+
+    ! trafo 3
+    temp = mo
+    mo = 0.0_wp
+    do i = 1, dim
+      do j = 1, dim
+        do k = 1, dim
+          do l = 1, dim
+            do t = 1, dim
+              mo(i, j, k, l) = mo(i, j, k, l) + C(t, j)*temp(i, t, k, l)
+            end do
+          end do
+        end do
+      end do
+    end do
+
+    ! trafo 4
+    temp = mo
+    mo = 0.0_wp
+    do i = 1, dim
+      do j = 1, dim
+        do k = 1, dim
           do l = 1, dim
             do u = 1, dim
-              mo(l, k, j, i) = mo(l, k, j, i) + C(l, u)*temp(u, k, j, i)
+              mo(i, j, k, l) = mo(i, j, k, l) + C(u, i)*temp(u, j, k, l)
             end do
           end do
         end do

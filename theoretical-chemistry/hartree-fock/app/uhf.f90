@@ -300,8 +300,6 @@ contains
       write (*, "(A23,12X,F15.10)") "Hartree-Fock energy ... ", ehf
       write (*, "(A16,19X,F15.10)") "Total energy ...", ehf
     end if
-
-    ! call scan_charge_density(P, expnts, xyz, bf_atom_map, ng)
   end subroutine uhf_prog
 
 !*****************************************************************************
@@ -321,26 +319,37 @@ contains
 
     ! variables for routine
     real(wp) :: s_exact, delta
-    integer :: i, j
+    integer :: i, j, dim, alloc_stat
+    real(wp), allocatable, dimension(:, :) :: temp
 
     if (present(print_level) .and. print_level >= 1) then
       write (*, *) ""
       write (*, "(A34,6X)", advance="no") "Calculating spin contamination ..."
     end if
 
+    ! allocate temp variable
+    dim = get_dim_mat(S)
+    allocate (temp(dim, dim), stat=alloc_stat)
+    if (alloc_stat /= 0) error stop 1
+
+    ! transform AO to MO basis
+    temp = matmul(matmul(transpose(C_a), S), C_b)
+
+    !> calculate exact spin contamination
     s_exact = (nel_a - nel_b)*0.5_wp*((nel_a - nel_b)*0.5_wp + 1)
 
     delta = nel_b
     do i = 1, nel_a
       do j = 1, nel_b
-        delta = delta - (C_a(i, j)*S(i, j)*C_b(i, j))**2 ! WRONG... obviously
+        delta = delta - temp(i, j)**2
       end do
     end do
     spin_uhf = s_exact - delta
 
     if (present(print_level) .and. print_level >= 1) then
       write (*, "(A)") "done"
-      write (*, "(A31,F8.5)") " -> Expectation value of S**2: ", spin_uhf
+      write (*, "(A24,7X,F9.6)") " -> Spin contamination: ", delta
+      write (*, "(A31,F9.6)") " -> Expectation value of S**2: ", spin_uhf
     end if
   end subroutine get_spin_contam
 
@@ -459,6 +468,7 @@ contains
     !print
     if (present(print_level)) then
       if (print_level >= 2) then
+        write (*, *) ""
         write (*, "(A24,16X)", advance="no") "Building Fock matrix ..."
       end if
     end if

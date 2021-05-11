@@ -7,7 +7,7 @@ set -eu
 export LC_NUMERIC=en_US.UTF-8
 
 # put the name of your program here
-program="build/gfortran_2A42023B310FA28D/app/scf"
+program="build/gfortran_2A42023B310FA28D/app/hartree-fock"
 # unique pattern to find the final energy
 pattern='Total energy ...                     '
 # output file for plotting
@@ -19,16 +19,12 @@ last_distance=10.0
 step=0.1
 
 read -r -d 'END' input <<EOF
-2 4 8 0 1
+0 1 0
+1 2 4
 0.0  0.0  0.0  2.0  4
-2.5    
-1.625  
-1.0    
-0.5
-0.0  0.0  DIST  2.0  4
-2.5    
-1.625  
-1.0    
+2.5
+1.625
+1.0
 0.5
 END
 EOF

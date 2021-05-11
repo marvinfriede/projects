@@ -77,7 +77,7 @@ program main_prog
   real(wp), parameter :: TOL_OPT = 1.0e-4_wp
   integer, parameter :: MAX_SCF = 100
   integer, parameter :: MAX_OPT_GEOM = 1000
-  integer, parameter :: MAX_OPT_EXP = 100
+  integer, parameter :: MAX_OPT_EXP = 1000
   real(wp), parameter :: COORD_STEP_SIZE = 0.1_wp
   real(wp), parameter :: EXPNTS_STEP_SIZE = 0.01_wp
   real(wp), parameter :: ETA = 0.5_wp
@@ -106,8 +106,7 @@ program main_prog
     end if
   end if
 
-  write (*, 100) input_file
-100 format("Running HF calculation on '", A, "'.")
+  write (*, "(A27,A,A2)") "Running HF calculation on '", input_file, "'."
 
   ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -173,40 +172,40 @@ program main_prog
   !********************* MAIN PROGRAM **********************
   !*********************************************************
 
-  ! UHF if specified or number of electrons odd
+  !> UHF if specified or number of electrons odd
   if (do_uhf == 1 .or. modulo(nel, 2) /= 0) then
     call uhf_prog(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
                   ehf, MAX_SCF, TOL_SCF, print_level)
 
-    ! RHF
+    !> RHF
   else
-    ! geometry optimization
+    !> geometry optimization
     if (do_opt == 1 .or. do_opt == 3) then
       write (*, 101)
       write (*, "(A)") "Geometry optimization"
       write (*, 102)
 
-      ! xyz is modified (inout!)
+      !> xyz is modified (inout!)
       call opt_coords(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
                       MAX_SCF, TOL_SCF, MAX_OPT_GEOM, TOL_OPT, ETA, &
                       COORD_STEP_SIZE, print_level)
     end if
 
-    ! Slater exponent optimization
+    !> Slater exponent optimization
     if (do_opt == 2 .or. do_opt == 3) then
       write (*, 101)
       write (*, "(A)") "Exponent optimization"
       write (*, 102)
 
-      ! zeta is modified (inout!)
+      !> zeta is modified (inout!)
       call opt_expnts(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
                       MAX_SCF, TOL_SCF, MAX_OPT_EXP, TOL_OPT, ETA, &
                       EXPNTS_STEP_SIZE, print_level)
     end if
 
-    ! final energy calculation (uses optimized values, always print!)
+    !> final energy calculation (uses optimized values)
     call scf_prog(nat, nel, nbf, ng, xyz, chrg, zeta, bf_atom_map, &
-                  ehf, MAX_SCF, TOL_SCF, do_mp2, 1)
+                  ehf, MAX_SCF, TOL_SCF, do_mp2, print_level)
 
   end if
 
@@ -215,6 +214,7 @@ program main_prog
   !*********************************************************
 
   deallocate (zeta)
+  deallocate (bf_atom_map)
   deallocate (chrg)
   deallocate (xyz)
 
