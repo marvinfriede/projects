@@ -858,7 +858,7 @@ contains
       ! check if converged
       if (rms(grad_coords) < TOL_OPT) exit steep
 
-			!> exit if number of iteration exceeds maximum
+      !> exit if number of iteration exceeds maximum
       if (k >= MAX_OPT_GEOM) then
         write (*, "(A)") "Maximum number of iterations reached."
         write (*, "(A)") "Geometry not converged!"
@@ -945,10 +945,10 @@ contains
         write (*, "(A15,F15.10)") "RMS(exponents) =", rms_vec(grad_expnts)
       end if
 
-			! check if converged
+      ! check if converged
       if (rms_vec(grad_expnts) < TOL_OPT) exit steep_expnts
 
-			!> exit if number of iteration exceeds maximum
+      !> exit if number of iteration exceeds maximum
       if (k >= MAX_OPT_EXP) then
         write (*, "(A)") "Maximum number of iterations reached."
         write (*, "(A)") "Geometry not converged!"
@@ -964,11 +964,11 @@ contains
         eta_new = 10.0_wp
       else if (k == 50) then
         eta_new = 20.0_wp
-			else if (k == 100) then
+      else if (k == 100) then
         eta_new = 30.0_wp
-			else if (k == 150) then
+      else if (k == 150) then
         eta_new = 50.0_wp
-			else if (k == 200) then
+      else if (k == 200) then
         eta_new = 100.0_wp
       end if
     end do steep_expnts
