@@ -261,9 +261,11 @@ contains
       write (*, 102)
     end if
 
-    !> get initial density matrix
+    !> get initial coefficient matrix, UHF needs different guesses for P
+    P_a = matmul(matmul(X, n_occ_a), X)
+    P_b = 0.0_wp
     call iter_step(nbf, T, V, two_ints, X, n_occ_a, n_occ_b, P_a, P_b, &
-                   C_a, C_b, escf, print_level, 1)
+                   C_a, C_b, escf, print_level)
 
     !*********************************************************
     !******************* SCF PROCEDURE ***********************
@@ -344,12 +346,13 @@ contains
         delta = delta - temp(i, j)**2
       end do
     end do
-    spin_uhf = s_exact - delta
+    spin_uhf = s_exact + delta
 
     if (present(print_level) .and. print_level >= 1) then
       write (*, "(A)") "done"
-      write (*, "(A24,7X,F9.6)") " -> Spin contamination: ", delta
+      write (*, "(A25,6X,F9.6)") " -> Ideal value of S**2: ", s_exact
       write (*, "(A31,F9.6)") " -> Expectation value of S**2: ", spin_uhf
+      write (*, "(A24,7X,F9.6)") " -> Spin contamination: ", delta
     end if
   end subroutine get_spin_contam
 
@@ -384,7 +387,7 @@ contains
 
       escf_old = escf
       call iter_step(nbf, T, V, two_ints, X, n_occ_a, n_occ_b, P_a, P_b, &
-                     C_a, C_b, escf, print_level, 0)
+                     C_a, C_b, escf, print_level)
 
       ! calc diff between iterations, print it and exit if below threshold
       ediff = abs(escf - escf_old)
@@ -411,7 +414,7 @@ contains
   end subroutine scf_loop
 
   subroutine iter_step(nbf, T, V, two_ints, X, n_occ_a, n_occ_b, P_a, P_b, &
-                       C_a, C_b, escf, print_level, is_initial)
+                       C_a, C_b, escf, print_level)
     implicit none
     integer, intent(in) :: nbf
     real(wp), intent(in), dimension(:, :), allocatable :: T
@@ -421,7 +424,6 @@ contains
     integer, intent(in), dimension(:, :), allocatable :: n_occ_a
     integer, intent(in), dimension(:, :), allocatable :: n_occ_b
     integer, intent(in), optional :: print_level
-    integer, intent(in), optional :: is_initial
     real(wp), intent(inout), dimension(:, :), allocatable :: P_a
     real(wp), intent(inout), dimension(:, :), allocatable :: P_b
     real(wp), intent(inout), dimension(:, :), allocatable :: C_a
@@ -477,22 +479,20 @@ contains
     H = T + V
     F_a = H
     F_b = H
-    if (present(is_initial) .and. is_initial == 0) then
-      do i = 1, nbf
-        do j = 1, nbf
-          do k = 1, nbf
-            do l = 1, nbf
-              F_a(i, j) = F_a(i, j) + &
-                          (P_a(k, l) + P_b(k, l))*two_ints(i, j, l, k) - &
-                          P_a(k, l)*two_ints(i, l, j, k)
-              F_b(i, j) = F_b(i, j) + &
-                          (P_a(k, l) + P_b(k, l))*two_ints(i, j, l, k) - &
-                          P_b(k, l)*two_ints(i, l, j, k)
-            end do
+    do i = 1, nbf
+      do j = 1, nbf
+        do k = 1, nbf
+          do l = 1, nbf
+            F_a(i, j) = F_a(i, j) + &
+                        (P_a(k, l) + P_b(k, l))*two_ints(i, j, l, k) - &
+                        P_a(k, l)*two_ints(i, l, j, k)
+            F_b(i, j) = F_b(i, j) + &
+                        (P_a(k, l) + P_b(k, l))*two_ints(i, j, l, k) - &
+                        P_b(k, l)*two_ints(i, l, j, k)
           end do
         end do
       end do
-    end if
+    end do
 
     ! print
     if (present(print_level)) then
