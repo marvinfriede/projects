@@ -1,9 +1,8 @@
+#!/bin/env python3
+
 from PIL.ExifTags import TAGS, GPSTAGS
 from PIL import Image
 from glob import glob
-
-
-
 
 
 def get_exif(filename):

@@ -1,3 +1,4 @@
+#!/bin/env python3
 # coding: utf-8 
 
 from pynput.keyboard import Key, Listener #from lib

@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import sys
 from datetime import datetime
 from glob import glob

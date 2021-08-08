@@ -1,3 +1,7 @@
+#!/bin/env python3
+#
+# work in progress
+
 import sys
 from PIL import Image
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QToolTip, QFileDialog

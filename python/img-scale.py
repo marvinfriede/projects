@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 # https://stackoverflow.com/questions/273946/how-do-i-resize-an-image-using-pil-and-maintain-its-aspect-ratio
 
 from PIL import Image
