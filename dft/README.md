@@ -4,7 +4,7 @@ Rudimentary DFT program. Extra course taught by René Wirnata in 2019/2020.
 
 **Sources**  
 [https://tu-freiberg.de/fakultaet2/thph/lehre/density-functional-theory](https://tu-freiberg.de/fakultaet2/thph/lehre/density-functional-theory)  
-[https://github.com/PandaScience/teaching-resources)](https://github.com/PandaScience/teaching-resources)
+[https://github.com/PandaScience/teaching-resources](https://github.com/PandaScience/teaching-resources)
 
 &nbsp;
 ### Assignment 1 ###
