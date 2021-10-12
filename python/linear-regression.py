@@ -2,6 +2,7 @@
 # coding: utf-8 
 
 import numpy as np
+import sys
 
 
 def linear(x, y, n):
@@ -27,20 +28,14 @@ def R2(x, y, n, a, b, c = 0):
 
 
 def main():
-	#data = np.genfromtxt('out.txt', dtype=float, delimiter=None)
-	#t = data[:,0]
-	#a = data[:,1]
-	
 	x = np.array([0.0162, 1.4094, 3.0132, 5.5080, 8.1000, 10.3032, 11.8422])
 	y = np.array([0.0089, 0.0265, 0.0400, 0.0650, 0.0835, 0.1017, 0.1092])
 
-	if len(x) == len(y):
-		n = len(x)
-	else:
-		exit("Number of data points for x and y are different!")
+	if len(x) != len(y):
+		sys.exit("Number of data points for x and y are different!")
 
 
-
+	n = len(x)
 	a, b = linear(x, y, n)
 	r2, r2_adj = R2(x, y, n, a, b)
 
