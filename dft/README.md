@@ -8,12 +8,12 @@ Rudimentary DFT program. Extra course taught by René Wirnata in 2019/2020.
 
 &nbsp;
 ### Assignment 1 ###
-This script implements the full radial Schrödinger equation for the H-atom
-according. First, the 2nd order ODE is converted to a system of 1st order
-equations. This function is then integrated for a prescribed range, energy
-and orbital quantum number. The latter is coupled to the Secant root finding
-algorithm, that should eventually return the lowest energy for the given
-setup, provided the numerical parameters are set properly. For the hydrogen
+This script implements the full radial Schrödinger equation for the H-atom.
+First, the 2nd order ODE is converted to a system of 1st order equations.
+This function is then integrated for a prescribed range, energy and orbital
+quantum number. The latter is coupled to the Secant root finding algorithm,
+that should eventually return the lowest energy for the given setup,
+provided the numerical parameters are set properly. For the hydrogen
 ground state, i.e. 1 electron in the 1s-orbital, this script yields almost
 exactly -0.5 Hartree.
 
