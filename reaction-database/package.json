@@ -20,7 +20,7 @@
   "license": "MIT",
   "devDependencies": {
     "clean-webpack-plugin": "^3.0.0",
-    "css-loader": "^4.2.1",
+    "css-loader": "^7.1.1",
     "file-loader": "^6.0.0",
     "gh-pages": "^3.2.3",
     "html-loader": "^1.1.0",
@@ -28,7 +28,7 @@
     "less-loader": "^6.2.0",
     "mini-css-extract-plugin": "^0.10.0",
     "optimize-css-assets-webpack-plugin": "^6.0.1",
-    "postcss-loader": "^3.0.0",
+    "postcss-loader": "^8.1.1",
     "raw-loader": "^4.0.1",
     "sass": "^1.35.1",
     "sass-loader": "^10.0.4",
